@@ -1,0 +1,1487 @@
+[
+  {
+    "id": "sample_000010",
+    "text1": "he later learned that the incident was caused by the concorde 's sonic boom .",
+    "text2": "he later found out the alarming incident had been caused by concorde 's powerful sonic boom .",
+    "text3": "she later found out the alarming incident had been caused by concorde 's powerful sonic boom .",
+    "s1": 4.847991943359375,
+    "s2": 4.5423583984375,
+    "gap": 0.305633544921875,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.5423583984375,
+    "methods_used": [
+      "entity_pronoun_substitution"
+    ]
+  },
+  {
+    "id": "sample_000024",
+    "text1": "aaa spokesman jerry cheske said prices may have affected some plans , but cheap hotel deals mitigated the effect .",
+    "text2": "aaa spokesman jerry cheske said prices might have affected some plans , but cheap hotel deals made up for it .",
+    "text3": "aaa spokesman jerry cheske said prices might have affected some plans , but cheap hotel deals made up for they .",
+    "s1": 4.883262634277344,
+    "s2": 4.887862682342529,
+    "gap": -0.004600048065185547,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.8878626823425293,
+    "methods_used": [
+      "entity_pronoun_substitution"
+    ]
+  },
+  {
+    "id": "sample_000082",
+    "text1": "after protesters rushed the stage and twice cut power to the microphone , hedges drew the speech to an early close .",
+    "text2": "after protesters rushed the stage and twice cut power to the microphone , hedges cut his speech short .",
+    "text3": "after protesters rushed the stage and twice cut power to the microphone , hedges cut her speech short .",
+    "s1": 4.631416320800781,
+    "s2": 4.563376426696777,
+    "gap": 0.0680398941040039,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.5633764266967773,
+    "methods_used": [
+      "entity_pronoun_substitution"
+    ]
+  },
+  {
+    "id": "sample_000085",
+    "text1": "doctors say one or both boys may die , and that some brain damage is possible if they survive .",
+    "text2": "doctors said that one or both of the boys may die and that if they survive , some brain damage is possible .",
+    "text3": "doctors said that one or both of the boys may die and that if it survive , some brain damage is possible .",
+    "s1": 4.945311069488525,
+    "s2": 4.9377546310424805,
+    "gap": 0.007556438446044922,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.9377546310424805,
+    "methods_used": [
+      "entity_pronoun_substitution"
+    ]
+  },
+  {
+    "id": "sample_000102",
+    "text1": "the company claims it 's the largest single apple var xserve sale to date .",
+    "text2": "the company claimed it is the largest sale of xserves by an apple retailer .",
+    "text3": "the company claimed they is the largest sale of xserves by an apple retailer .",
+    "s1": 4.58021354675293,
+    "s2": 4.546757698059082,
+    "gap": 0.033455848693847656,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.546757698059082,
+    "methods_used": [
+      "entity_pronoun_substitution"
+    ]
+  },
+  {
+    "id": "sample_000107",
+    "text1": "the value will total about $ 124 million , including convertible securities , according to corel .",
+    "text2": "including convertible securities , the total estimated value of the deal is $ 124 million , according to corel .",
+    "text3": "including convertible securities , the total estimated value of the deal is $ 125 million , according to corel .",
+    "s1": 4.80228328704834,
+    "s2": 4.394038200378418,
+    "gap": 0.4082450866699219,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.394038200378418,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_000139",
+    "text1": "but software license revenues , a measure financial analysts watch closely , decreased 21 percent to $ 107.6 million .",
+    "text2": "license sales , a key measure of demand , fell 21 percent to $ 107.6 million .",
+    "text3": "license sales , a key measure of demand , fell 22 percent to $ 107.6 million .",
+    "s1": 4.279460430145264,
+    "s2": 3.6770992279052734,
+    "gap": 0.6023612022399902,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.6770992279052734,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_000210",
+    "text1": "sendmail said the system can even be set up to permit business-only usage .",
+    "text2": "the product can be instructed to permit business-only use , according to sendmail .",
+    "text3": "the product can not be instructed to permit business-only use , according to sendmail .",
+    "s1": 4.586310386657715,
+    "s2": 3.6132988929748535,
+    "gap": 0.9730114936828613,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.6132988929748535,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000264",
+    "text1": "the operating revenues were $ 1.45 billion , an increase over last year 's result of $ 1.38 billion .",
+    "text2": "operating revenues rose to $ 1.45 billion from $ 1.38 billion last year .",
+    "text3": "operating revenues rose to $ 2.45 billion from $ 1.38 billion last year .",
+    "s1": 4.873928546905518,
+    "s2": 4.661770343780518,
+    "gap": 0.212158203125,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.6617703437805176,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_000274",
+    "text1": "ruffner , 45 , doesn 't yet have an attorney in the murder charge , authorities said .",
+    "text2": "ruffner , 45 , does not have a lawyer on the murder charge , authorities said .",
+    "text3": "ruffner , 46 , does not have a lawyer on the murder charge , authorities said .",
+    "s1": 4.825314044952393,
+    "s2": 4.682193279266357,
+    "gap": 0.14312076568603516,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.6821932792663574,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_000278",
+    "text1": "the report shows that drugs sold in canadian pharmacies are manufactured in facilities approved by health canada - the fda 's counterpart in canada .",
+    "text2": "the report shows that drugs sold in canadian pharmacies are manufactured in facilities approved by health canada , which serves a similar role as the fda for the canadian government .",
+    "text3": "the report shows that drugs sold in canadian pharmacies are not manufactured in facilities approved by health canada , which serves a similar role as the fda for the canadian government .",
+    "s1": 4.876051425933838,
+    "s2": 4.362343788146973,
+    "gap": 0.5137076377868652,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.3623437881469727,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000289",
+    "text1": "who will succeed mr. o 'neill at hyundai is not clear .",
+    "text2": "there is no clear successor for mr. o 'neill at hyundai .",
+    "text3": "there is clear successor for mr. o 'neill at hyundai .",
+    "s1": 4.319493770599365,
+    "s2": 3.9789223670959473,
+    "gap": 0.34057140350341797,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.9789223670959473,
+    "methods_used": [
+      "double_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000337",
+    "text1": "\" the gloves are off , \" said unifi official rob o 'neill .",
+    "text2": "unifi official rob o 'neill said : \" the gloves are off .",
+    "text3": "unifi official rob o 'neill said : \" the gloves are not off .",
+    "s1": 4.940843105316162,
+    "s2": 4.223306179046631,
+    "gap": 0.7175369262695312,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.223306179046631,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000461",
+    "text1": "the island nation reported 65 new cases on may 22 , a one day record , and 55 new cases on may 23 , making taiwan 's epidemic the fastest-growing in the world .",
+    "text2": "taiwan reported 65 new cases on may 22 , a one-day record , and 55 new cases on may 23 , making its epidemic the world 's fastest-growing .",
+    "text3": "taiwan reported 66 new cases on may 22 , a one-day record , and 55 new cases on may 23 , making its epidemic the world 's fastest-growing .",
+    "s1": 4.92127799987793,
+    "s2": 4.76224422454834,
+    "gap": 0.15903377532958984,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.76224422454834,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_000476",
+    "text1": "south africa has the world 's highest caseload with 4.7 million people infected with hiv or aids .",
+    "text2": "with 4.7 million people infected with hiv or aids , south africa has the world 's highest aids caseload .",
+    "text3": "with 5.70 million people infected with hiv or aids , south africa has the world 's highest aids caseload .",
+    "s1": 4.935274600982666,
+    "s2": 4.375298500061035,
+    "gap": 0.5599761009216309,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.375298500061035,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_000505",
+    "text1": "bioreliance 's stock closed down 2 cents yesterday at $ 47.98 per share .",
+    "text2": "shares of bioreliance sold at $ 47.98 at the close of market yesterday , down 2 cents .",
+    "text3": "shares of bioreliance sold at $ 48.98 at the close of market yesterday , down 2 cents .",
+    "s1": 4.727165222167969,
+    "s2": 4.5403218269348145,
+    "gap": 0.1868433952331543,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.5403218269348145,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_000541",
+    "text1": "druce will face murder charges , conte said .",
+    "text2": "conte said druce will be charged with murder .",
+    "text3": "conte said druce will not be charged with murder .",
+    "s1": 4.875603199005127,
+    "s2": 3.6080946922302246,
+    "gap": 1.2675085067749023,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.6080946922302246,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000543",
+    "text1": "eu ministers were invited to the conference but canceled because the union is closing talks on agricultural reform , said gerry kiely , a eu agriculture representative in washington .",
+    "text2": "gerry kiely , a eu agriculture representative in washington , said eu ministers were invited but canceled because the union is closing talks on agricultural reform .",
+    "text3": "gerry kiely , a eu agriculture representative in washington , said eu ministers were not invited but canceled because the union is closing talks on agricultural reform .",
+    "s1": 4.8533430099487305,
+    "s2": 4.7088541984558105,
+    "gap": 0.14448881149291992,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.7088541984558105,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000559",
+    "text1": "no americans were reported among the casualties , according to capt. michael calvert , a spokesman for the regiment .",
+    "text2": "none of the casualties was americans , said capt. michael calvert , regiment spokesman .",
+    "text3": "none of the casualties was americans , said capt. michael calvert , regime spokesman .",
+    "s1": 4.5587005615234375,
+    "s2": 4.138150691986084,
+    "gap": 0.4205498695373535,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.138150691986084,
+    "methods_used": [
+      "double_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000594",
+    "text1": "and now it 's anything he wants to say , \" alesha badgley , stone county nursing and rehabilitation center social director , said this week .",
+    "text2": "and now it 's anything he wants to say , \" confirmed stone county nursing and rehabilitation center social director alesha badgley .",
+    "text3": "and now it 's anything she wants to say , \" confirmed stone county nursing and rehabilitation center social director alesha badgley .",
+    "s1": 4.897207260131836,
+    "s2": 4.71180534362793,
+    "gap": 0.18540191650390625,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.7118053436279297,
+    "methods_used": [
+      "entity_pronoun_substitution"
+    ]
+  },
+  {
+    "id": "sample_000595",
+    "text1": "the national denomination of the episcopal church , with 2.3 million members , is the u.s. branch of the 77 million-member anglican communion .",
+    "text2": "the episcopal church , with 2.3 million members , is the american branch of the worldwide anglican communion , which has 77 million adherents .",
+    "text3": "the episcopal church , with 3.30 million members , is the american branch of the worldwide anglican communion , which has 77 million adherents .",
+    "s1": 4.768955707550049,
+    "s2": 4.564492702484131,
+    "gap": 0.20446300506591797,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.564492702484131,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_000629",
+    "text1": "police spokesman brig. gen. edward aritonang confirmed saturday that another two had been arrested , one in jakarta and another in magelang , central java .",
+    "text2": "brigadier general edward aritonang , a police spokesman , confirmed yesterday that another two had been arrested , one in jakarta and another in magelang , central java .",
+    "text3": "brigadier general edward aritonang , a police spokesman , confirmed yesterday that another two had not been arrested , one in jakarta and another in magelang , central java .",
+    "s1": 4.847450256347656,
+    "s2": 3.940962553024292,
+    "gap": 0.9064877033233643,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.940962553024292,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000728",
+    "text1": "when you crossed the line , you violated the constitutional right , \" said charles weisselberg , a uc berkeley law professor .",
+    "text2": "when you crossed the line , you violated the constitutional right , \" said charles weisselberg , who teaches law at the university of california , berkeley .",
+    "text3": "Not When you crossed the line , you violated the constitutional right , \" said charles weisselberg , who teaches law at the university of california , berkeley .",
+    "s1": 4.908594131469727,
+    "s2": 4.7233428955078125,
+    "gap": 0.18525123596191406,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.7233428955078125,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000751",
+    "text1": "a man with a hard hat is dancing .",
+    "text2": "a man wearing a hard hat is dancing .",
+    "text3": "a man wearing a hard hat is not dancing .",
+    "s1": 4.994945049285889,
+    "s2": 3.621112823486328,
+    "gap": 1.3738322257995605,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.621112823486328,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000752",
+    "text1": "a plane is taking off .",
+    "text2": "an air plane is taking off .",
+    "text3": "an air plane is not taking off .",
+    "s1": 4.912039756774902,
+    "s2": 3.750206232070923,
+    "gap": 1.1618335247039795,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.750206232070923,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000754",
+    "text1": "a man is feeding a mouse to a snake .",
+    "text2": "the man is feeding a mouse to the snake .",
+    "text3": "the man is not feeding a mouse to the snake .",
+    "s1": 4.965002059936523,
+    "s2": 3.5096793174743652,
+    "gap": 1.4553227424621582,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.5096793174743652,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000766",
+    "text1": "a man is erasing a chalk board .",
+    "text2": "the man is erasing the chalk board .",
+    "text3": "the man is not erasing the chalk board .",
+    "s1": 4.962225914001465,
+    "s2": 4.103063583374023,
+    "gap": 0.8591623306274414,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.1030635833740234,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000767",
+    "text1": "a person is throwing a cat on to the ceiling .",
+    "text2": "a person throws a cat on the ceiling .",
+    "text3": "Not A person throws a cat on the ceiling .",
+    "s1": 4.938339710235596,
+    "s2": 3.3597702980041504,
+    "gap": 1.5785694122314453,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.3597702980041504,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000776",
+    "text1": "the polar bear is sliding on the snow .",
+    "text2": "a polar bear is sliding across the snow .",
+    "text3": "a polar bear is not sliding across the snow .",
+    "s1": 4.888610363006592,
+    "s2": 4.139157772064209,
+    "gap": 0.7494525909423828,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.139157772064209,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000780",
+    "text1": "the man is riding a horse .",
+    "text2": "a man is riding on a horse .",
+    "text3": "a man is not riding on a horse .",
+    "s1": 4.908273220062256,
+    "s2": 3.153064012527466,
+    "gap": 1.75520920753479,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.153064012527466,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000786",
+    "text1": "a woman peels a potato .",
+    "text2": "a woman is peeling a potato .",
+    "text3": "a woman is not peeling a potato .",
+    "s1": 4.884047985076904,
+    "s2": 3.8947865962982178,
+    "gap": 0.9892613887786865,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.8947865962982178,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000787",
+    "text1": "a woman peels a potato .",
+    "text2": "a woman is peeling a potato .",
+    "text3": "a woman is not peeling a potato .",
+    "s1": 4.884047985076904,
+    "s2": 3.8947865962982178,
+    "gap": 0.9892613887786865,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.8947865962982178,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000791",
+    "text1": "the woman is playing the flute .",
+    "text2": "a woman is playing a flute .",
+    "text3": "a woman is not playing a flute .",
+    "s1": 4.95756721496582,
+    "s2": 3.1731247901916504,
+    "gap": 1.78444242477417,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.1731247901916504,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000792",
+    "text1": "the cougar is chasing the bear .",
+    "text2": "a cougar is chasing a bear .",
+    "text3": "a cougar is not chasing a bear .",
+    "s1": 4.947958946228027,
+    "s2": 3.824148178100586,
+    "gap": 1.1238107681274414,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.824148178100586,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000794",
+    "text1": "the man cut down a tree with an axe .",
+    "text2": "a man chops down a tree with an axe .",
+    "text3": "Not A man chops down a tree with an axe .",
+    "s1": 4.893774509429932,
+    "s2": 4.206916809082031,
+    "gap": 0.6868577003479004,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.2069168090820312,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000796",
+    "text1": "one woman is measuring another woman 's ankle .",
+    "text2": "a woman measures another woman 's ankle .",
+    "text3": "Not A woman measures another woman 's ankle .",
+    "s1": 4.920111656188965,
+    "s2": 3.9096810817718506,
+    "gap": 1.0104305744171143,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.9096810817718506,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000806",
+    "text1": "a dog rides a skateboard .",
+    "text2": "a dog is riding a skateboard .",
+    "text3": "a dog is not riding a skateboard .",
+    "s1": 4.963733673095703,
+    "s2": 3.3820364475250244,
+    "gap": 1.5816972255706787,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.3820364475250244,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000809",
+    "text1": "a woman peels shrimp .",
+    "text2": "a woman is peeling shrimp .",
+    "text3": "a woman is not peeling shrimp .",
+    "s1": 4.885962009429932,
+    "s2": 3.6629960536956787,
+    "gap": 1.222965955734253,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.6629960536956787,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000816",
+    "text1": "a person cuts an onion .",
+    "text2": "a person is cutting an onion .",
+    "text3": "a person is not cutting an onion .",
+    "s1": 4.961379051208496,
+    "s2": 3.574528932571411,
+    "gap": 1.386850118637085,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.574528932571411,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000818",
+    "text1": "a man is climbing a rope .",
+    "text2": "a man climbs a rope .",
+    "text3": "Not A man climbs a rope .",
+    "s1": 4.9739274978637695,
+    "s2": 3.7762832641601562,
+    "gap": 1.1976442337036133,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.7762832641601562,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000835",
+    "text1": "a man is playing the drums .",
+    "text2": "a man plays the drum .",
+    "text3": "Not A man plays the drum .",
+    "s1": 4.83747673034668,
+    "s2": 3.677583694458008,
+    "gap": 1.1598930358886719,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.677583694458008,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000836",
+    "text1": "a woman rides a horse .",
+    "text2": "a woman is riding a horse .",
+    "text3": "a woman is not riding a horse .",
+    "s1": 4.952710151672363,
+    "s2": 3.238786458969116,
+    "gap": 1.713923692703247,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.238786458969116,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000851",
+    "text1": "a man is cutting an onion .",
+    "text2": "a man cuts an onion .",
+    "text3": "Not A man cuts an onion .",
+    "s1": 4.96658992767334,
+    "s2": 3.9920270442962646,
+    "gap": 0.9745628833770752,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.9920270442962646,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000852",
+    "text1": "a man and a woman are kissing .",
+    "text2": "a man and woman kiss .",
+    "text3": "Not A man and woman kiss .",
+    "s1": 4.941824913024902,
+    "s2": 3.2858152389526367,
+    "gap": 1.6560096740722656,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.2858152389526367,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000867",
+    "text1": "a man is tying his shoe .",
+    "text2": "a man ties his shoe .",
+    "text3": "a man ties her shoe .",
+    "s1": 4.928349018096924,
+    "s2": 4.394573211669922,
+    "gap": 0.533775806427002,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.394573211669922,
+    "methods_used": [
+      "entity_pronoun_substitution"
+    ]
+  },
+  {
+    "id": "sample_000918",
+    "text1": "a woman is using a sewing machine .",
+    "text2": "a woman is sewing on a machine .",
+    "text3": "a woman is not sewing on a machine .",
+    "s1": 4.89259672164917,
+    "s2": 3.7973687648773193,
+    "gap": 1.0952279567718506,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.7973687648773193,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000940",
+    "text1": "a band is performing on a stage .",
+    "text2": "a band is playing onstage .",
+    "text3": "a band is not playing onstage .",
+    "s1": 4.55653190612793,
+    "s2": 3.396821975708008,
+    "gap": 1.1597099304199219,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.396821975708008,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000943",
+    "text1": "a man is climbing a rope .",
+    "text2": "a man climbs up a rope .",
+    "text3": "Not A man climbs up a rope .",
+    "s1": 4.864739894866943,
+    "s2": 3.838907480239868,
+    "gap": 1.0258324146270752,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.838907480239868,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000957",
+    "text1": "a man is playing a guitar .",
+    "text2": "a man plays the guitar .",
+    "text3": "Not A man plays the guitar .",
+    "s1": 4.956962585449219,
+    "s2": 3.5853495597839355,
+    "gap": 1.3716130256652832,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.5853495597839355,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000968",
+    "text1": "a man plays the flute .",
+    "text2": "a man is playing a flute .",
+    "text3": "a man is not playing a flute .",
+    "s1": 4.96634578704834,
+    "s2": 3.1151795387268066,
+    "gap": 1.8511662483215332,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.1151795387268066,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000969",
+    "text1": "a man plays the violin .",
+    "text2": "a man is playing violin .",
+    "text3": "a man is not playing violin .",
+    "s1": 4.958456993103027,
+    "s2": 3.3893051147460938,
+    "gap": 1.5691518783569336,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.3893051147460938,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_000970",
+    "text1": "a man plays the piano .",
+    "text2": "a man is playing a piano .",
+    "text3": "a man is not playing a piano .",
+    "s1": 4.961062431335449,
+    "s2": 3.3952598571777344,
+    "gap": 1.5658025741577148,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.3952598571777344,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001004",
+    "text1": "a woman is dancing in the rain .",
+    "text2": "a woman dances in the rain out side .",
+    "text3": "Not A woman dances in the rain out side .",
+    "s1": 4.928910255432129,
+    "s2": 3.5304622650146484,
+    "gap": 1.3984479904174805,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.5304622650146484,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001042",
+    "text1": "a woman slices tofu .",
+    "text2": "a woman is cutting tofu .",
+    "text3": "a woman is not cutting tofu .",
+    "s1": 4.851737022399902,
+    "s2": 3.803913116455078,
+    "gap": 1.0478239059448242,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.803913116455078,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001066",
+    "text1": "a woman puts flour on a piece of meat .",
+    "text2": "a woman is putting flour onto some meat .",
+    "text3": "a woman is putting flour onto most meat .",
+    "s1": 4.948019027709961,
+    "s2": 4.8901591300964355,
+    "gap": 0.05785989761352539,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.8901591300964355,
+    "methods_used": [
+      "scope_degree_scaling"
+    ]
+  },
+  {
+    "id": "sample_001071",
+    "text1": "a person plays a keyboard .",
+    "text2": "someone is playing a keyboard .",
+    "text3": "someone is not playing a keyboard .",
+    "s1": 4.958520889282227,
+    "s2": 3.7860350608825684,
+    "gap": 1.1724858283996582,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.7860350608825684,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001119",
+    "text1": "a man puts some cheese on a pizza .",
+    "text2": "the man sprinkled cheese on the pizza .",
+    "text3": "Not The man sprinkled cheese on the pizza .",
+    "s1": 4.656838417053223,
+    "s2": 4.108835220336914,
+    "gap": 0.5480031967163086,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.108835220336914,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001120",
+    "text1": "the boy is playing the piano .",
+    "text2": "a boy plays a piano .",
+    "text3": "Not A boy plays a piano .",
+    "s1": 4.932913303375244,
+    "s2": 3.833078145980835,
+    "gap": 1.0998351573944092,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.833078145980835,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001121",
+    "text1": "the man is kissing and hugging the woman .",
+    "text2": "a man is hugging and kissing a woman .",
+    "text3": "a man is not hugging and kissing a woman .",
+    "s1": 4.910158157348633,
+    "s2": 3.0576720237731934,
+    "gap": 1.8524861335754395,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.0576720237731934,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001131",
+    "text1": "a man is buttering a piece of bread .",
+    "text2": "a man is applying butter to bread .",
+    "text3": "a man is not applying butter to bread .",
+    "s1": 4.625894546508789,
+    "s2": 3.9617457389831543,
+    "gap": 0.6641488075256348,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.9617457389831543,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001227",
+    "text1": "a man puts seasoning in a bowl of water .",
+    "text2": "the man added seasoning to water in a bowl .",
+    "text3": "Not The man added seasoning to water in a bowl .",
+    "s1": 4.837165832519531,
+    "s2": 4.621482849121094,
+    "gap": 0.2156829833984375,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.6214828491210938,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001239",
+    "text1": "the man used a sword to slice a plastic bottle .",
+    "text2": "a man sliced a plastic bottle with a sword .",
+    "text3": "Not A man sliced a plastic bottle with a sword .",
+    "s1": 4.888547897338867,
+    "s2": 4.2504096031188965,
+    "gap": 0.6381382942199707,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.2504096031188965,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001305",
+    "text1": "a man is doing trick with play cards .",
+    "text2": "a man is performing a card trick .",
+    "text3": "a man is not performing a card trick .",
+    "s1": 4.815718173980713,
+    "s2": 4.038112163543701,
+    "gap": 0.7776060104370117,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.038112163543701,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001321",
+    "text1": "a group of people sing .",
+    "text2": "some people are singing .",
+    "text3": "most people are singing .",
+    "s1": 4.817730903625488,
+    "s2": 4.6133809089660645,
+    "gap": 0.20434999465942383,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.6133809089660645,
+    "methods_used": [
+      "scope_degree_scaling"
+    ]
+  },
+  {
+    "id": "sample_001502",
+    "text1": "amendment no 7 proposes certain changes in the references to paragraphs .",
+    "text2": "amendment no 7 is proposing certain changes in the references to paragraphs .",
+    "text3": "amendment no 8 is proposing certain changes in the references to paragraphs .",
+    "s1": 4.971874237060547,
+    "s2": 4.531293869018555,
+    "gap": 0.4405803680419922,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.5312938690185547,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_001505",
+    "text1": "the fishermen are inactive , tired and disappointed .",
+    "text2": "the fishermen are inactive , tired and disappointed .",
+    "text3": "the fishermen are not inactive , tired and disappointed .",
+    "s1": 4.999999523162842,
+    "s2": 4.828495979309082,
+    "gap": 0.17150354385375977,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.828495979309082,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001506",
+    "text1": "neither was there a qualified majority within this house to revert to article 272 .",
+    "text2": "there was not a majority voting in parliament to go back to article 272 .",
+    "text3": "there was not a majority voting in parliament to go back to article 273 .",
+    "s1": 4.132510185241699,
+    "s2": 3.92042875289917,
+    "gap": 0.2120814323425293,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.92042875289917,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_001508",
+    "text1": "the fishermen are inactive , tired and disappointed .",
+    "text2": "the fishers are inactive , tired and disappointed .",
+    "text3": "the fishers are not inactive , tired and disappointed .",
+    "s1": 4.747933864593506,
+    "s2": 4.54473876953125,
+    "gap": 0.20319509506225586,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.54473876953125,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001509",
+    "text1": "the leaders have now been given a new chance and let us hope they seize it .",
+    "text2": "leaders now have another chance to let them and therefore take .",
+    "text3": "leaders now have another chance to let it and therefore take .",
+    "s1": 4.477297782897949,
+    "s2": 4.415040493011475,
+    "gap": 0.06225728988647461,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.4150404930114746,
+    "methods_used": [
+      "entity_pronoun_substitution"
+    ]
+  },
+  {
+    "id": "sample_001516",
+    "text1": "tunisia",
+    "text2": "tunisia",
+    "text3": "Not Tunisia",
+    "s1": 4.999999046325684,
+    "s2": 3.787432909011841,
+    "gap": 1.2125661373138428,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.787432909011841,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001519",
+    "text1": "mr president , the cashman report can be summarised in four words : citizens ' power over bureaucracy .",
+    "text2": "mr president , the cashman report can be summed up in a few words : the power of citizens on bureaucracy .",
+    "text3": "mr president , the cashman report can be summed up in a many words : the power of citizens on bureaucracy .",
+    "s1": 4.74294376373291,
+    "s2": 4.709872245788574,
+    "gap": 0.03307151794433594,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.709872245788574,
+    "methods_used": [
+      "scope_degree_scaling"
+    ]
+  },
+  {
+    "id": "sample_001520",
+    "text1": "amendment no 7 proposes certain changes in the references to paragraphs .",
+    "text2": "amendment no 7 proposes changes to certain paragraphs references .",
+    "text3": "amendment no 8 proposes changes to certain paragraphs references .",
+    "s1": 4.905154705047607,
+    "s2": 4.414917469024658,
+    "gap": 0.4902372360229492,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.414917469024658,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_001522",
+    "text1": "thank you , commissioner .",
+    "text2": "thank you , commissioner .",
+    "text3": "Not Thank you , commissioner .",
+    "s1": 5.0,
+    "s2": 3.630434989929199,
+    "gap": 1.3695650100708008,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.630434989929199,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001524",
+    "text1": "thank you , commissioner .",
+    "text2": "thank you , commissioner .",
+    "text3": "Not Thank you , commissioner .",
+    "s1": 5.0,
+    "s2": 3.630434989929199,
+    "gap": 1.3695650100708008,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.630434989929199,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001525",
+    "text1": "( parliament adopted the legislative resolution )",
+    "text2": "( parliament adopted the legislative resolution )",
+    "text3": "Not ( parliament adopted the legislative resolution )",
+    "s1": 5.0,
+    "s2": 4.395735740661621,
+    "gap": 0.6042642593383789,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.395735740661621,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001526",
+    "text1": "let me remind you that our allies include fervent supporters of this tax .",
+    "text2": "i want to say to you that among our allies , there are fervent of this tax .",
+    "text3": "i want to say to you that among our allies , there are not fervent of this tax .",
+    "s1": 4.623936653137207,
+    "s2": 3.938572883605957,
+    "gap": 0.68536376953125,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.938572883605957,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001530",
+    "text1": "it increases the power of the big countries at the expense of the small countries .",
+    "text2": "it has increased the power of the large countries to the detriment of small .",
+    "text3": "they has increased the power of the large countries to the detriment of small .",
+    "s1": 4.780133247375488,
+    "s2": 4.738899230957031,
+    "gap": 0.04123401641845703,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.7388992309570312,
+    "methods_used": [
+      "entity_pronoun_substitution"
+    ]
+  },
+  {
+    "id": "sample_001535",
+    "text1": "it increases the power of the big countries at the expense of the small countries .",
+    "text2": "it has in fact increased the power of large countries to the detriment of small .",
+    "text3": "they has in fact increased the power of large countries to the detriment of small .",
+    "s1": 4.706748008728027,
+    "s2": 4.653742790222168,
+    "gap": 0.053005218505859375,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.653742790222168,
+    "methods_used": [
+      "entity_pronoun_substitution"
+    ]
+  },
+  {
+    "id": "sample_001536",
+    "text1": "then perhaps we could have avoided a catastrophe .",
+    "text2": "perhaps then we would have avoided a catastrophe .",
+    "text3": "perhaps then we would not have avoided a catastrophe .",
+    "s1": 4.934837341308594,
+    "s2": 4.746756076812744,
+    "gap": 0.1880812644958496,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.746756076812744,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001538",
+    "text1": "neither was there a qualified majority within this house to revert to article 272 .",
+    "text2": "there was not either qualified majority within this parliament to come back to the article 272 .",
+    "text3": "there was not either qualified majority within this parliament to come back to the article 273 .",
+    "s1": 4.394060134887695,
+    "s2": 4.223000526428223,
+    "gap": 0.17105960845947266,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.2230005264282227,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_001539",
+    "text1": "amendment no 7 proposes certain changes in the references to paragraphs .",
+    "text2": "amendment no 7 proposes certain changes in the references to paragraphs .",
+    "text3": "amendment no 8 proposes certain changes in the references to paragraphs .",
+    "s1": 4.999999523162842,
+    "s2": 4.515253067016602,
+    "gap": 0.48474645614624023,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.5152530670166016,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_001540",
+    "text1": "maij-weggen report ( a5-0323 / 2000 )",
+    "text2": "maij-weggen report ( a5-0323 / 2000 )",
+    "text3": "maij-weggen report ( a5-324 / 2000 )",
+    "s1": 5.0,
+    "s2": 4.805869102478027,
+    "gap": 0.19413089752197266,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.8058691024780273,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_001542",
+    "text1": "thank you , commissioner .",
+    "text2": "thank you , commissioner .",
+    "text3": "Not Thank you , commissioner .",
+    "s1": 5.0,
+    "s2": 3.630434989929199,
+    "gap": 1.3695650100708008,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.630434989929199,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001543",
+    "text1": "amendment no 7 proposes certain changes in the references to paragraphs .",
+    "text2": "amendment 7 proposes certain modifications in the references to the paragraphs .",
+    "text3": "amendment 8 proposes certain modifications in the references to the paragraphs .",
+    "s1": 4.753617286682129,
+    "s2": 4.228074073791504,
+    "gap": 0.525543212890625,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.228074073791504,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_001549",
+    "text1": "thank you , commissioner .",
+    "text2": "thank you , commissioner .",
+    "text3": "Not Thank you , commissioner .",
+    "s1": 5.0,
+    "s2": 3.630434989929199,
+    "gap": 1.3695650100708008,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.630434989929199,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001550",
+    "text1": "( parliament adopted the legislative resolution )",
+    "text2": "( the parliament adopts the legislative resolution )",
+    "text3": "Not ( the parliament adopts the legislative resolution )",
+    "s1": 4.839795112609863,
+    "s2": 4.307089328765869,
+    "gap": 0.5327057838439941,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.307089328765869,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001551",
+    "text1": "tunisia",
+    "text2": "tunisia",
+    "text3": "Not Tunisia",
+    "s1": 4.999999046325684,
+    "s2": 3.787432909011841,
+    "gap": 1.2125661373138428,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.787432909011841,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001552",
+    "text1": "mr president , the cashman report can be summarised in four words : citizens ' power over bureaucracy .",
+    "text2": "mr president , the cashman report can be summarized in a few words : the power of citizens on bureaucracy .",
+    "text3": "mr president , the cashman report can be summarized in a many words : the power of citizens on bureaucracy .",
+    "s1": 4.749128341674805,
+    "s2": 4.7182159423828125,
+    "gap": 0.030912399291992188,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.7182159423828125,
+    "methods_used": [
+      "scope_degree_scaling"
+    ]
+  },
+  {
+    "id": "sample_001553",
+    "text1": "neither was there a qualified majority within this house to revert to article 272 .",
+    "text2": "there was no more qualified majority voting in this parliament to come back to article 272 .",
+    "text3": "there was no more qualified majority voting in this parliament to come back to article 273 .",
+    "s1": 3.9061851501464844,
+    "s2": 3.6977639198303223,
+    "gap": 0.2084212303161621,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 2.6977639198303223,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_001557",
+    "text1": "van orden report ( a5-0241 / 2000 )",
+    "text2": "van orden report ( a5-0241 / 2000 )",
+    "text3": "van orden report ( a5-242 / 2000 )",
+    "s1": 4.999999523162842,
+    "s2": 4.739627361297607,
+    "gap": 0.2603721618652344,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.7396273612976074,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_001559",
+    "text1": "it is our job to continue to support latvia with the integration of the russian population .",
+    "text2": "it is our duty to continue to support latvia on the issue of the integration of the russian population .",
+    "text3": "they is our duty to continue to support latvia on the issue of the integration of the russian population .",
+    "s1": 4.750495910644531,
+    "s2": 4.745536804199219,
+    "gap": 0.0049591064453125,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.7455368041992188,
+    "methods_used": [
+      "entity_pronoun_substitution"
+    ]
+  },
+  {
+    "id": "sample_001560",
+    "text1": "( parliament adopted the legislative resolution )",
+    "text2": "( parliament adopted the legislative resolution )",
+    "text3": "Not ( parliament adopted the legislative resolution )",
+    "s1": 5.0,
+    "s2": 4.395735740661621,
+    "gap": 0.6042642593383789,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.395735740661621,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  },
+  {
+    "id": "sample_001564",
+    "text1": "maij-weggen report ( a5-0323 / 2000 )",
+    "text2": "maij-weggen report ( a5-0323 / 2000 )",
+    "text3": "maij-weggen report ( a5-324 / 2000 )",
+    "s1": 5.0,
+    "s2": 4.805869102478027,
+    "gap": 0.19413089752197266,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.8058691024780273,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_001570",
+    "text1": "it is our job to continue to support latvia with the integration of the russian population .",
+    "text2": "it is of our duty to continue supporting the latvia on the question of the incorporation of the russian population .",
+    "text3": "they is of our duty to continue supporting the latvia on the question of the incorporation of the russian population .",
+    "s1": 4.624968528747559,
+    "s2": 4.612793922424316,
+    "gap": 0.012174606323242188,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.6127939224243164,
+    "methods_used": [
+      "entity_pronoun_substitution"
+    ]
+  },
+  {
+    "id": "sample_001571",
+    "text1": "van orden report ( a5-0241 / 2000 )",
+    "text2": "mr van orden report ( a5-0241 / 2000 )",
+    "text3": "mr van orden report ( a5-242 / 2000 )",
+    "s1": 4.858521938323975,
+    "s2": 4.627965927124023,
+    "gap": 0.23055601119995117,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.6279659271240234,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_001572",
+    "text1": "mr president , the cashman report can be summarised in four words : citizens ' power over bureaucracy .",
+    "text2": "mr. president , the cashman report / ratio can summarize himself in a few words : capacity of the citizens on the bureaucracy .",
+    "text3": "mr. president , the cashman report / ratio can summarize himself in a many words : capacity of the citizens on the bureaucracy .",
+    "s1": 4.445031642913818,
+    "s2": 4.446532249450684,
+    "gap": -0.0015006065368652344,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.4465322494506836,
+    "methods_used": [
+      "scope_degree_scaling"
+    ]
+  },
+  {
+    "id": "sample_001573",
+    "text1": "amendment no 7 proposes certain changes in the references to paragraphs .",
+    "text2": "amendment 7 proposes certain modifications in the references to the paragraphs .",
+    "text3": "amendment 8 proposes certain modifications in the references to the paragraphs .",
+    "s1": 4.753617286682129,
+    "s2": 4.228074073791504,
+    "gap": 0.525543212890625,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.228074073791504,
+    "methods_used": [
+      "numeric_metric_transform"
+    ]
+  },
+  {
+    "id": "sample_001575",
+    "text1": "it is our job to continue to support latvia with the integration of the russian population .",
+    "text2": "it is our duty to continue to support the latvia on the question of the integration of the russian population .",
+    "text3": "they is our duty to continue to support the latvia on the question of the integration of the russian population .",
+    "s1": 4.687504768371582,
+    "s2": 4.68036413192749,
+    "gap": 0.007140636444091797,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.6803641319274902,
+    "methods_used": [
+      "entity_pronoun_substitution"
+    ]
+  },
+  {
+    "id": "sample_001576",
+    "text1": "( parliament adopted the legislative resolution )",
+    "text2": "( parliament adopted the legislative resolution )",
+    "text3": "Not ( parliament adopted the legislative resolution )",
+    "s1": 5.0,
+    "s2": 4.395735740661621,
+    "gap": 0.6042642593383789,
+    "gt_score_original": 5.0,
+    "gt_score_mapped": 1,
+    "gt_offset": 3.395735740661621,
+    "methods_used": [
+      "direct_negation_attack"
+    ]
+  }
+]

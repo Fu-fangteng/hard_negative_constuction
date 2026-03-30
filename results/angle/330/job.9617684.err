@@ -1,0 +1,8 @@
+/hpc2hdd/home/ffu000/representation_learning/hard_neg/src/evaluator.py:488: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  pearson_corr, _ = pearsonr(x_list, y_list)
+/hpc2hdd/home/ffu000/representation_learning/hard_neg/src/evaluator.py:491: ConstantInputWarning: An input array is constant; the correlation coefficient is not defined.
+  spearman_corr, _ = spearmanr(x_list, y_list)
+/hpc2hdd/home/ffu000/.conda/envs/rpl/lib/python3.9/site-packages/numpy/lib/_function_base_impl.py:2922: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/hpc2hdd/home/ffu000/.conda/envs/rpl/lib/python3.9/site-packages/numpy/lib/_function_base_impl.py:2923: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]

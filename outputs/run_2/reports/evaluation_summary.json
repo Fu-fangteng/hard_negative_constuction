@@ -1,0 +1,37 @@
+{
+  "n_samples": 99,
+  "similarity_backend": "angle_emb",
+  "S1_stats": {
+    "mean": 4.83100498083866,
+    "var": 0.03859715363353805,
+    "median": 4.89259672164917
+  },
+  "S2_stats": {
+    "mean": 4.119099573655562,
+    "var": 0.2512028637092521,
+    "median": 4.139157772064209
+  },
+  "Gap_stats": {
+    "mean": 0.711905407183098,
+    "var": 0.30192222238246513,
+    "median": 0.6042642593383789
+  },
+  "validity_ratio": 0.9797979797979798,
+  "best_methods": [
+    {
+      "method": "direct_negation_attack",
+      "mean_gap": 1.0452403779757224,
+      "n": 59
+    },
+    {
+      "method": "double_negation_attack",
+      "mean_gap": 0.38056063652038574,
+      "n": 2
+    },
+    {
+      "method": "numeric_metric_transform",
+      "mean_gap": 0.32068021297454835,
+      "n": 20
+    }
+  ]
+}

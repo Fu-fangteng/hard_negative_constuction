@@ -1,0 +1,40 @@
+Job started at Mon 30 Mar 2026 10:57:15 AM CST
+[INIT] Output directory structure created at: outputs/run_2
+
+[STAGE 1] Loading and sampling data...
+  → Selected top 100 records by score
+  → Saved top-k positives to outputs/run_2/data
+
+[STAGE 2] Feature extraction and formatting...
+  → Saved formatted data to outputs/run_2/data
+
+[STAGE 3] Constructing hard negatives...
+  → Generated 99 hard negative samples
+  → Saved final dataset to outputs/run_2/data
+
+[STAGE 4] Evaluating similarities...
+[DATA] Saved detailed data: outputs/run_2/eval_detailed.json
+[DATA] Saved metrics: outputs/run_2/eval_metrics.json
+[PLOT] Saved: outputs/run_2/visualizations/eval_gap_hist.png
+[PLOT] Saved: outputs/run_2/visualizations/eval_s1_vs_s2_scatter.png
+[PLOT] Saved: outputs/run_2/visualizations/eval_s1_s2_boxplot.png
+[PLOT] Saved: outputs/run_2/visualizations/eval_violin.png
+[PLOT] Saved: outputs/run_2/visualizations/eval_gap_vs_gt.png
+[PLOT] Saved: outputs/run_2/visualizations/eval_cdf.png
+[PLOT] Saved: outputs/run_2/visualizations/eval_s2_vs_gt.png
+  → Evaluation complete
+
+[RESULTS]
+  📊 Samples: 99
+  📈 S1 (original) - Mean: 4.8310, Median: 4.8926
+  📉 S2 (generated) - Mean: 4.1191, Median: 4.1392
+  📌 Gap (S1-S2) - Mean: 0.7119, Median: 0.6043
+  ✓ Validity (S2 < S1): 97.98%
+
+✅ Pipeline completed successfully!
+📁 Output directory: outputs/run_2
+   ├── data/              (sampled data, formatted data, final dataset)
+   ├── metrics/           (evaluation metrics & detailed results)
+   ├── reports/           (markdown & text reports)
+   └── visualizations/    (PNG charts)
+Job ended at Mon 30 Mar 2026 10:57:30 AM CST

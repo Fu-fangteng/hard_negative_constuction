@@ -1,0 +1,17 @@
+numpy
+
+# Similarity backend (used in src/evaluator.py and your evaluate.py reference)
+angle-emb
+
+# Optional plotting for evaluator (auto-skipped if not installed)
+matplotlib
+
+# Optional: LLM feature extraction backend (used in src/llm_engine.py)
+transformers
+torch
+
+# Optional: spaCy rule-based hints in src/formatter.py
+spacy
+
+# Optional: data analysis helpers (if you extend scripts later)
+pandas
