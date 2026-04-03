@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(head -3 /Users/feng/Downloads/MRL/Coding/hard_neg/data/train*.jsonl)",
+      "Bash(head -3 /Users/feng/Downloads/MRL/Coding/hard_neg/data/train*.json)",
+      "Bash(python3:*)",
+      "Bash(cp src/__init__.py stage1/__init__.py)",
+      "Bash(cp src/data_utils.py stage1/data_utils.py)",
+      "Bash(cp src/sampler.py stage1/sampler.py)",
+      "Bash(cp src/llm_engine.py stage1/llm_engine.py)",
+      "Bash(cp src/prompts.py stage1/prompts.py)",
+      "Bash(mv data/preprocessed_data/* data/stage2/preprocessed/)",
+      "Bash(mv data/processed_data/* data/stage2/processed/)",
+      "Bash(cp -r outputs/* data/stage1/)",
+      "Bash(python:*)"
+    ]
+  }
+}

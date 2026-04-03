@@ -1,0 +1,18 @@
+==============================
+Method    : numeric_metric_transform
+Recognizer: Regular
+Date      : 2026-04-03 12:14:22
+------------------------------
+Total     : 1000
+Success   : 16  (1.6%)
+Failed    : 984  (98.4%)
+
+Failure breakdown:
+  no_feature_found         :  984  (100.0%)
+  output_same_as_input     :    0  (0.0%)
+  empty_output             :    0  (0.0%)
+  llm_error                :    0  (0.0%)
+
+Avg feature count     : 0.02
+Processing time       : 0.81s
+==============================

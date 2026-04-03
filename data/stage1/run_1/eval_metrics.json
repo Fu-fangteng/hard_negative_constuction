@@ -1,0 +1,154 @@
+{
+  "n": 99,
+  "similarity_backend": "angle_emb",
+  "S1_stats": {
+    "mean": 4.831004932673291,
+    "var": 0.03859719764459332,
+    "median": 4.892596244812012
+  },
+  "S2_stats": {
+    "mean": 4.119099380994084,
+    "var": 0.2512028570011041,
+    "median": 4.139158248901367
+  },
+  "Gap_stats": {
+    "mean": 0.7119055516792067,
+    "var": 0.3019222951056076,
+    "median": 0.6042647361755371
+  },
+  "validity_ratio_S2_lt_S1": 0.9797979797979798,
+  "GT_offset_stats": {
+    "mean": 3.119099380994084,
+    "var": 0.2512028570011042,
+    "median": 3.139158248901367
+  },
+  "gt_mapping": {
+    "original_range": [
+      0,
+      5
+    ],
+    "target_range": [
+      0,
+      1
+    ],
+    "enabled": true
+  },
+  "GT_mapped_stats": {
+    "mean": 1.0,
+    "var": 0.0,
+    "median": 1.0
+  },
+  "gt_correlation": {
+    "pearson": NaN,
+    "spearman": NaN
+  },
+  "method_contribution": {
+    "numeric_metric_transform": {
+      "n": 20,
+      "gap_stats": {
+        "mean": 0.3206803798675537,
+        "var": 0.024483961827002076,
+        "median": 0.2213573455810547
+      }
+    },
+    "entity_pronoun_substitution": {
+      "n": 13,
+      "gap_stats": {
+        "mean": 0.10077194067148063,
+        "var": 0.022701893672458357,
+        "median": 0.04123353958129883
+      }
+    },
+    "scope_degree_scaling": {
+      "n": 5,
+      "gap_stats": {
+        "mean": 0.06493825912475586,
+        "var": 0.005214591578951512,
+        "median": 0.03307056427001953
+      }
+    },
+    "direct_negation_attack": {
+      "n": 59,
+      "gap_stats": {
+        "mean": 1.0452405557794087,
+        "var": 0.2083349294747021,
+        "median": 1.0998358726501465
+      }
+    },
+    "double_negation_attack": {
+      "n": 2,
+      "gap_stats": {
+        "mean": 0.38056135177612305,
+        "var": 0.0015992341004675836,
+        "median": 0.38056135177612305
+      }
+    },
+    "logical_operator_rewrite": {
+      "n": 0,
+      "gap_stats": {
+        "mean": 0.0,
+        "var": 0.0,
+        "median": 0.0
+      }
+    },
+    "role_swap": {
+      "n": 0,
+      "gap_stats": {
+        "mean": 0.0,
+        "var": 0.0,
+        "median": 0.0
+      }
+    },
+    "temporal_causal_inversion": {
+      "n": 0,
+      "gap_stats": {
+        "mean": 0.0,
+        "var": 0.0,
+        "median": 0.0
+      }
+    },
+    "concept_hierarchy_shift": {
+      "n": 0,
+      "gap_stats": {
+        "mean": 0.0,
+        "var": 0.0,
+        "median": 0.0
+      }
+    },
+    "premise_disruption": {
+      "n": 0,
+      "gap_stats": {
+        "mean": 0.0,
+        "var": 0.0,
+        "median": 0.0
+      }
+    }
+  },
+  "best_methods_by_mean_gap": [
+    {
+      "method": "direct_negation_attack",
+      "mean_gap": 1.0452405557794087,
+      "n": 59
+    },
+    {
+      "method": "double_negation_attack",
+      "mean_gap": 0.38056135177612305,
+      "n": 2
+    },
+    {
+      "method": "numeric_metric_transform",
+      "mean_gap": 0.3206803798675537,
+      "n": 20
+    },
+    {
+      "method": "entity_pronoun_substitution",
+      "mean_gap": 0.10077194067148063,
+      "n": 13
+    },
+    {
+      "method": "scope_degree_scaling",
+      "mean_gap": 0.06493825912475586,
+      "n": 5
+    }
+  ]
+}

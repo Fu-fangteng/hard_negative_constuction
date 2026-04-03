@@ -1,0 +1,15 @@
+==============================
+Method    : premise_disruption
+Recognizer: Regular
+Date      : 2026-04-03 12:14:23
+------------------------------
+Total     : 1000
+Success   : 1000  (100.0%)
+Failed    : 0  (0.0%)
+
+Failure breakdown:
+  (none)
+
+Avg feature count     : 1.00
+Processing time       : 0.04s
+==============================

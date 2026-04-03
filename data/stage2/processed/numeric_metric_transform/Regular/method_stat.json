@@ -1,0 +1,15 @@
+{
+  "method_name": "numeric_metric_transform",
+  "recognizer_type": "Regular",
+  "total_samples": 1000,
+  "success_count": 16,
+  "success_ratio": 0.016,
+  "avg_feature_count": 0.02,
+  "failure_reasons": {
+    "no_feature_found": 984,
+    "output_same_as_input": 0,
+    "empty_output": 0,
+    "llm_error": 0
+  },
+  "processing_time_sec": 0.81
+}

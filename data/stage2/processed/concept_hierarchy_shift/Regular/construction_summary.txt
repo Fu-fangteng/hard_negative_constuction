@@ -1,0 +1,18 @@
+==============================
+Method    : concept_hierarchy_shift
+Recognizer: Regular
+Date      : 2026-04-03 12:14:23
+------------------------------
+Total     : 1000
+Success   : 39  (3.9%)
+Failed    : 961  (96.1%)
+
+Failure breakdown:
+  no_feature_found         :  961  (100.0%)
+  output_same_as_input     :    0  (0.0%)
+  empty_output             :    0  (0.0%)
+  llm_error                :    0  (0.0%)
+
+Avg feature count     : 0.00
+Processing time       : 0.05s
+==============================
