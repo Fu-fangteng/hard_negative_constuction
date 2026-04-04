@@ -1,18 +1,18 @@
-==============================
+========================================
 Method    : role_swap
 Recognizer: Regular
-Date      : 2026-04-03 12:14:23
-------------------------------
+Date      : 2026-04-04 02:03:57
+----------------------------------------
 Total     : 1000
-Success   : 0  (0.0%)
-Failed    : 1000  (100.0%)
+Success   : 664  (66.4%)
+Failed    : 336  (33.6%)
 
 Failure breakdown:
-  no_feature_found         : 1000  (100.0%)
+  no_feature_found         :  336  (100.0%)
   output_same_as_input     :    0  (0.0%)
   empty_output             :    0  (0.0%)
-  llm_error                :    0  (0.0%)
+  exception                :    0  (0.0%)
 
-Avg feature count     : 0.00
-Processing time       : 0.04s
-==============================
+Avg feature count : 0.74
+Processing time   : 228.27s
+========================================

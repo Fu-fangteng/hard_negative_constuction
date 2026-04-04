@@ -1,8 +1,8 @@
-==============================
+========================================
 Method    : logical_operator_rewrite
 Recognizer: Regular
-Date      : 2026-04-03 12:14:23
-------------------------------
+Date      : 2026-04-04 02:00:09
+----------------------------------------
 Total     : 1000
 Success   : 52  (5.2%)
 Failed    : 948  (94.8%)
@@ -11,8 +11,8 @@ Failure breakdown:
   no_feature_found         :  948  (100.0%)
   output_same_as_input     :    0  (0.0%)
   empty_output             :    0  (0.0%)
-  llm_error                :    0  (0.0%)
+  exception                :    0  (0.0%)
 
-Avg feature count     : 0.05
-Processing time       : 0.05s
-==============================
+Avg feature count : 0.05
+Processing time   : 236.93s
+========================================

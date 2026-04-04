@@ -1,8 +1,8 @@
-==============================
+========================================
 Method    : scope_degree_scaling
 Recognizer: Regular
-Date      : 2026-04-03 12:14:23
-------------------------------
+Date      : 2026-04-04 01:32:03
+----------------------------------------
 Total     : 1000
 Success   : 75  (7.5%)
 Failed    : 925  (92.5%)
@@ -11,8 +11,8 @@ Failure breakdown:
   no_feature_found         :  925  (100.0%)
   output_same_as_input     :    0  (0.0%)
   empty_output             :    0  (0.0%)
-  llm_error                :    0  (0.0%)
+  exception                :    0  (0.0%)
 
-Avg feature count     : 0.08
-Processing time       : 0.05s
-==============================
+Avg feature count : 0.08
+Processing time   : 215.4s
+========================================

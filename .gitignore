@@ -1,0 +1,41 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Python
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# 环境
+.env
+.venv/
+
+# IDE
+.idea/
+.vscode/
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 大型数据文件（原始 parquet 不入库）
+data/raw/*.parquet
+data/raw/*.jsonl
+
+# Claude 本地设置
+.claude/settings.local.json
+
+# Stage 2 大型日志文件（逐行 jsonl，可本地重新生成）
+data/stage2/processed/*/Regular/construction_log.jsonl
+data/stage2/processed/*/Regular/constructed_data.json
+data/stage2/preprocessed/
+

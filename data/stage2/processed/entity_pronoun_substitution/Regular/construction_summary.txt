@@ -1,18 +1,18 @@
-==============================
+========================================
 Method    : entity_pronoun_substitution
 Recognizer: Regular
-Date      : 2026-04-03 12:14:22
-------------------------------
+Date      : 2026-04-04 01:28:28
+----------------------------------------
 Total     : 1000
-Success   : 193  (19.3%)
-Failed    : 807  (80.7%)
+Success   : 203  (20.3%)
+Failed    : 797  (79.7%)
 
 Failure breakdown:
-  no_feature_found         :  807  (100.0%)
+  no_feature_found         :  797  (100.0%)
   output_same_as_input     :    0  (0.0%)
   empty_output             :    0  (0.0%)
-  llm_error                :    0  (0.0%)
+  exception                :    0  (0.0%)
 
-Avg feature count     : 0.21
-Processing time       : 0.05s
-==============================
+Avg feature count : 0.80
+Processing time   : 210.5s
+========================================

@@ -1,8 +1,8 @@
-==============================
+========================================
 Method    : temporal_causal_inversion
 Recognizer: Regular
-Date      : 2026-04-03 12:14:23
-------------------------------
+Date      : 2026-04-04 02:06:41
+----------------------------------------
 Total     : 1000
 Success   : 19  (1.9%)
 Failed    : 981  (98.1%)
@@ -11,8 +11,8 @@ Failure breakdown:
   no_feature_found         :  981  (100.0%)
   output_same_as_input     :    0  (0.0%)
   empty_output             :    0  (0.0%)
-  llm_error                :    0  (0.0%)
+  exception                :    0  (0.0%)
 
-Avg feature count     : 0.02
-Processing time       : 0.05s
-==============================
+Avg feature count : 0.02
+Processing time   : 163.84s
+========================================
