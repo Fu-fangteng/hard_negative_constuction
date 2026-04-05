@@ -1,128 +1,164 @@
-# STS 困难负样本构造（Hard Negatives）
+# STS/NLI 困难负样本构造（Hard Negatives）
 
-这个项目用于在语义文本相似度（STS, Semantic Textual Similarity）数据集上构造“困难负样本”（Hard Negatives）。
-给定原始正样本对 `(text1, text2, score)`，通过对 `text2` 进行可控扰动生成 `text3`，使得相似度从 `S1=sim(text1,text2)` 明显下降到 `S2=sim(text1,text3)`。
+本项目分两个阶段，从 STS / NLI 数据集自动构造"困难负样本（Hard Negatives）"，用于对比学习等任务的训练集增强。
 
-## 1. 数据格式约定
+---
 
-项目全链路统一使用如下字段（类型：`id/text1/text2` 为字符串，`score` 为浮点数）：
+## 项目结构
 
-- `id`: 样本唯一标识（如数据里没有则自动生成）
-- `text1`: 句子 1
-- `text2`: 句子 2（后续要被扰动的对象）
-- `score`: STS 参考/标注分数（Ground Truth，用于后续偏移分析）
-
-输入文件支持：
-
-- `.jsonl`: 每行一个 JSON 对象
-- `.json`: list[object]
-- `.csv`: 列包含 `id,text1,text2,score`（或至少包含 text1/text2/score 的等价字段）
-
-## 2. 七个模块（体系化实现）
-
-### 模块 1：数据预处理 `src/data_utils.py`
-
-- 读取原始数据并清洗空白（避免无意义空格差异）
-- 统一映射到规范结构：`id/text1/text2/score`
-- 导出为 `.json` / `.csv`
-
-### 模块 2：数据筛选 `src/sampler.py`
-
-- 根据 `score` 选择前 `top_k` 条高相似正样本对
-- 主要用于构造实验子集（默认 `k=100`，可改）
-
-### 模块 3：LLM 驱动引擎 `src/llm_engine.py`（可选）
-
-- 预留本地加载开源模型的能力（如 Qwen 系列）
-- 本轮流水线默认未启用 LLM 抽取（`llm_engine=None` 可直接跑通规则版）
-
-### 模块 4：特征识别与自动格式化 `src/formatter.py`
-
-核心目标：对每条 `text2` 提取可用于“构造方法选择/执行”的特征，并输出：
-
-- `formatted_data.json`: `id/text1/text2/score + features + methods_available`
-- `methods_stat.json`: 每个方法的可用性标记（0/1）+ `feature_count`
-
-特征来源（由强到弱）：
-
-- 规则抽取（正则）：数值、逻辑词、顺序词、程度副词、否定词、代词等
-- 可选 spaCy：实体/主语候选/宾语候选（若模型没装则自动降级）
-- 可选 LLM：通过 `src/prompts.py` 提供的严格 JSON Prompt 抽取结构化特征
-
-### 模块 5：构造方法库 `src/constructors.py`
-
-实现 10 种困难负样本生成函数（失败返回 `None`，成功返回 `text3`）：
-
-1. `numeric_metric_transform`
-2. `entity_pronoun_substitution`
-3. `scope_degree_scaling`
-4. `direct_negation_attack`
-5. `double_negation_attack`
-6. `logical_operator_rewrite`
-7. `role_swap`
-8. `temporal_causal_inversion`
-9. `concept_hierarchy_shift`
-10. `premise_disruption`
-
-注：当前版本以规则为主（对“可用性”进行兜底），LLM 改写能力保留在后续扩展中。
-
-### 模块 6：核心调度 `src/main_generator.py`
-
-- 从 `formatted_data` 中读取特征和方法可用性
-- 支持单方法或组合（最多 1~3 个方法，按固定优先级依次尝试）
-- 校验生成结果：`text3` 必须非空且与 `text2` 不完全相同
-- 输出字段：`id/text1/text2/text3/score + methods_used`
-
-### 模块 7：评估与指标分析 `src/evaluator.py`
-
-基于 `angle_emb` 计算句向量余弦相似度：
-
-- `S1 = sim(text1, text2)`
-- `S2 = sim(text1, text3)`
-- `Gap = S1 - S2`（Gap 越大代表 `text3` 越“难”）
-
-并计算：
-
-- `validity_ratio_S2_lt_S1`: `S2 < S1` 的比例
-- `method_contribution`: 以 `methods_used` 为集合归因（方法出现则纳入该方法的 Gap 统计）
-- `GT_offset_stats`: `S2 - score(ground truth)` 的 mean/var/median
-- Gap/S1/S2 的 `mean/var/median`
-
-可视化（matplotlib，可缺省）：
-
-- Gap 直方图
-- S1 vs S2 散点图
-- S1/S2 箱线图
-
-## 3. 如何运行（端到端）
-
-运行脚本（不做评估，仅生成数据文件）：
-
-```bash
-python3 scripts/run_pipeline.py --input data/test.jsonl --out_dir outputs/run_1 --k 100
+```
+hard_neg/
+├── stage1/               # Stage 1: STS 数据集困难负样本构造
+│   ├── data_utils.py     # 数据加载（STSRecord）
+│   ├── sampler.py        # top-k 正样本筛选
+│   ├── llm_engine.py     # 本地 LLM 封装（可选）
+│   ├── prompts.py        # LLM prompt 模板
+│   ├── formatter.py      # 特征提取（regex + spaCy + LLM）
+│   ├── constructors.py   # 10 种构造方法
+│   ├── main_generator.py # 调度 text3 生成
+│   ├── evaluator.py      # 相似度评估（angle_emb）
+│   └── run_pipeline.py   # 端到端脚本
+├── stage2/               # Stage 2: NLI 三元组 → 四元组
+│   ├── data_loader.py    # 加载 parquet/jsonl（NLIRecord）
+│   ├── feature_extractor.py  # 特征提取（regex + spaCy，可降级）
+│   ├── constructors.py   # 复用 stage1 方法 + 增强实体替换表
+│   ├── builder.py        # PipelineRunner（per-method 独立运行）
+│   ├── analyzer.py       # 汇总统计、difference.md 生成
+│   └── run_stage2.py     # 主运行脚本
+├── data/
+│   ├── raw/              # 原始输入（parquet/jsonl，不入库）
+│   ├── stage1/           # Stage 1 输出
+│   └── stage2/
+│       ├── preprocessed/ # 预处理后数据（不入库）
+│       └── processed/    # 各方法构造结果
+├── tests/
+│   ├── conftest.py
+│   ├── stage1/           # Stage 1 单元测试
+│   └── stage2/           # Stage 2 单元测试（58 个，全部通过）
+├── docs/                 # 项目文档
+└── configs/              # 配置文件
 ```
 
-如果启用评估（需要 `angle-emb` 依赖正确安装）：
+---
+
+## Stage 1：STS 困难负样本构造
+
+### 数据格式
+
+- 输入：`(text1, text2, score)` — STS 正样本对
+- 输出：`(text1, text2, text3)` — text3 为构造的困难负样本
+
+### 运行
 
 ```bash
-python3 scripts/run_pipeline.py --input data/test.jsonl --out_dir outputs/run_1 --k 100 --evaluate
+# 基本运行（100 条，auto 方法选择）
+python stage1/run_pipeline.py --input data/raw/test.jsonl --out_dir data/stage1/run_1 --k 100
+
+# 启用评估（需安装 angle-emb）
+python stage1/run_pipeline.py --input data/raw/test.jsonl --out_dir data/stage1/run_1 --k 100 --evaluate
+
+# 指定方法
+python stage1/run_pipeline.py --input data/raw/test.jsonl --out_dir data/stage1/run_1 --k 100 \
+  --methods direct_negation_attack,entity_pronoun_substitution
 ```
 
-指定方法组合（可选）：
+### 输出文件
+
+| 文件 | 说明 |
+|---|---|
+| `topk_positives.json/.csv` | 前 k 条正样本对 |
+| `formatted_data.json` | 特征 + 方法可用性 |
+| `methods_stat.json` | 方法可用性统计 |
+| `final_dataset.jsonl/.csv` | 最终困难负样本数据集 |
+| `evaluation_report.json` | 评估指标（可选） |
+
+---
+
+## Stage 2：NLI 四元组构造
+
+### 数据格式
+
+- 输入：`(anchor, pos, neg)` — NLI 三元组（parquet 或 jsonl）
+- 输出：`(anchor, pos, neg, hard_neg)` — 四元组
+
+### 运行
 
 ```bash
-python3 scripts/run_pipeline.py --input data/test.jsonl --out_dir outputs/run_1 --k 100 --methods direct_negation_attack,entity_pronoun_substitution
+# 全方法独立运行（推荐）
+python stage2/run_stage2.py \
+    --input_path data/raw/train-00000-of-00001.parquet \
+    --output_base data/stage2 \
+    --sample_size 1000 \
+    --methods all \
+    --recognizer regular
+
+# 单方法
+python stage2/run_stage2.py \
+    --input_path data/raw/train-00000-of-00001.parquet \
+    --output_base data/stage2 \
+    --sample_size 1000 \
+    --methods role_swap \
+    --recognizer regular
 ```
 
-`--methods auto` 表示根据 `methods_available` 自动选择（默认行为）。
+### 输出目录结构
 
-## 4. 关键输出文件
+```
+data/stage2/processed/
+└── <method_name>/
+    └── Regular/
+        ├── constructed_data.json   # {id, anchor, pos, neg, hard_neg, success, ...}
+        ├── method_stat.json        # 成功率、失败原因统计
+        ├── construction_log.jsonl  # 逐条构造日志（不入库）
+        └── construction_summary.txt
+```
 
-在 `--out_dir` 下通常包括：
+---
 
-- `topk_positives.json/.csv`：前 `k` 条正样本对
-- `formatted_data.json`：特征 + 方法可用性
-- `methods_stat.json`：方法可用性统计
-- `final_dataset.jsonl/.csv`：最终困难负样本数据集
-- （可选）`evaluation_report.json`：评估指标汇总 + 可视化路径
+## 10 种构造方法
 
+| # | 方法 | 类别 | 关键特征 |
+|---|---|---|---|
+| 1 | `numeric_metric_transform` | 局部事实置换 | 数字、度量单位 |
+| 2 | `entity_pronoun_substitution` | 局部事实置换 | 实体名、代词 |
+| 3 | `scope_degree_scaling` | 局部事实置换 | 程度副词、量词 |
+| 4 | `direct_negation_attack` | 极性与逻辑反转 | 助动词、谓语 |
+| 5 | `double_negation_attack` | 极性与逻辑反转 | 否定词 |
+| 6 | `logical_operator_rewrite` | 极性与逻辑反转 | 逻辑连接词 |
+| 7 | `role_swap` | 结构与时序重组 | nsubj/dobj（需 spaCy） |
+| 8 | `temporal_causal_inversion` | 结构与时序重组 | 时序词、因果词 |
+| 9 | `concept_hierarchy_shift` | 知识与常识偏置 | 概念词（内置词表） |
+| 10 | `premise_disruption` | 知识与常识偏置 | 通用（兜底方法） |
+
+> 详见 [docs/hard_neg_construction_method.md](docs/hard_neg_construction_method.md)
+
+---
+
+## 依赖与环境
+
+```bash
+# conda rl 环境
+conda activate rl
+
+# 核心依赖
+pip install pandas pyarrow angle-emb spacy
+python -m spacy download en_core_web_sm
+
+# 测试
+python -m pytest tests/ -v
+```
+
+> **注**：spaCy `en_core_web_sm` 可选，未安装时 `role_swap` 等依赖依存句法的方法会失败，其余方法正常运行。
+
+---
+
+## 性能指标（Stage 1，99 samples，angle_emb）
+
+| 指标 | 值 |
+|---|---|
+| Gap 均值（S1-S2） | **0.712** |
+| 有效率（S2 < S1） | **97.98%** |
+| `direct_negation_attack` Gap 均值 | 1.045 |
+
+> Stage 2 各方法独立成功率：`role_swap` 66.4%、`direct_negation_attack` 91.9%、`entity_pronoun_substitution` 20.3%  
+> 详见 [docs/stage1_vs_stage2_comparison.md](docs/stage1_vs_stage2_comparison.md)

@@ -1,5 +1,108 @@
-🚀 STS 困难负样本构造工具开发指令角色设定你是一位资深的深度学习研究工程师，擅长表征学习（Representation Learning）和 NLP 数据增强。你的任务是编写一套自动化的 Python 工具集，用于从原始 STS 数据集中构造“困难负样本（Hard Negatives）”。核心任务：困难负样本构造体系构造逻辑分为四大模块，涵盖 10 种细分方法：局部事实置换： 数值/度量变换、实体/指代置换、范围/程度缩放。极性与逻辑反转： 否定攻击（直接/多重否定）、逻辑算子改写（因果/转折/假设）。结构与时序重组： 角色互换（主宾对调）、时序与因果倒置。知识与常识偏置： 概念层级偏移（上位词/下位词）、前提破坏。系统架构与实现需求请按以下 7 个模块实现代码，要求代码高度模块化，具有完善的异常处理。1. 数据预处理模块 (data_utils.py)功能： 读取原始数据，统一清洗为规范格式：id, text1, text2, score。输出： 支持导出为 .json 和 .csv。2. 数据筛选模块 (sampler.py)功能： 从预处理后的数据中提取前 100 条 score 最高的记录（即语义高度相似的正样本对），用于构造实验。3. LLM 驱动引擎模块 (llm_engine.py)功能： 封装一个加载开源模型（如 Qwen-7B-Chat 或 Qwen2-1.5B）的类。要求： 支持本地加载，优化 Inference 速度。4. 特征识别与自动格式化模块 (formatter.py)核心逻辑：输入 text2 到 LLM，识别并提取其关键特征：实体、数值、逻辑词、顺序词、程度副词等。输出格式化数据： 保留原数据，增加一个 features 字段。适配检查： 遍历 10 种构造方法。若某数据不含“数值”，对应方法标为 None。存储： 1. methods_stat.json: 记录 ID、各方法可用性（0/1）、识别到的关键词数量。2. formatted_data.json: 包含原始文本和识别后的结构化特征。5. 构造方法库 (constructors.py)功能： 实现上述 10 种方法的具体逻辑。接口： 接受 formatted_data，根据识别到的特征进行物理替换或 LLM 改写。原则： 每个方法独立成函数，方便插拔调用。6. 核心调度与主控模块 (main_generator.py)功能： 根据用户指令，指定应用某种方法（或 1~3 种方法的组合）对 text2 进行修改，生成 text3（困难负样本）。输出： 最终数据集包含 id, text1, text2, text3, score。验证： 包含一个校验函数，确保 text3 与 text2 确实存在差异且未生成空字符串。7. 评估与指标分析模块 (evaluator.py)功能： 1. 调用提供的相似度计算代码，计算 $S1 = \text{sim}(text1, text2)$ 和 $S2 = \text{sim}(text1, text3)$。2. 指标计算：* $S1$ 与 $S2$ 的差距（Gap）。* 构造有效性：$S2$ 是否显著低于 $S1$？* 方法贡献度：对比哪种方法或组合造成的 Gap 最大。* 以 $GT$ (Ground Truth) 为基准，分析 $S2$ 的偏移量。技术栈要求Language: Python 3.9+Libraries: transformers, torch, pandas, spacy (用于基础 NLP 辅助), json.LLM Guidance: 使用高效的 Prompt 引导 Qwen 进行实体识别和语义反转。接下来请开始：请先帮我搭建整个项目的目录结构。依次实现 data_utils.py 和 sampler.py。重点编写 formatter.py 中如何引导 LLM 识别特征的 Prompt 逻辑。
-额外要求：1、编写一个中文的详细的md代码
-2、技术要求
-3、指标添加mean、var、median的计算。加入可视化。
-4、强调项目实现的体系化。先搭建框架，再具体实现。
+# Stage 1 快速上手指南
+
+本文档说明如何运行 Stage 1 流水线（STS 数据集困难负样本构造）。
+
+---
+
+## 1. 环境准备
+
+```bash
+conda activate rl
+pip install pandas angle-emb spacy
+python -m spacy download en_core_web_sm   # 可选，缺失时 role_swap 等方法跳过
+```
+
+---
+
+## 2. 数据格式
+
+输入文件支持 `.jsonl`、`.json`、`.csv`，至少包含以下字段：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `id` | str | 样本唯一标识（可自动生成） |
+| `text1` | str | 句子 1 |
+| `text2` | str | 句子 2（将被扰动生成 text3） |
+| `score` | float | STS 标注相似度分数 |
+
+---
+
+## 3. 端到端运行
+
+```bash
+# 基本（100 条，auto 方法选择）
+python stage1/run_pipeline.py \
+    --input data/raw/test.jsonl \
+    --out_dir data/stage1/run_1 \
+    --k 100
+
+# 启用评估（需要 angle-emb）
+python stage1/run_pipeline.py \
+    --input data/raw/test.jsonl \
+    --out_dir data/stage1/run_1 \
+    --k 100 --evaluate
+
+# 指定构造方法
+python stage1/run_pipeline.py \
+    --input data/raw/test.jsonl \
+    --out_dir data/stage1/run_1 \
+    --k 100 \
+    --methods direct_negation_attack,entity_pronoun_substitution
+```
+
+参数 `--methods auto` 表示根据 `methods_available` 自动选择（默认行为）。
+
+---
+
+## 4. 输出文件
+
+运行后 `--out_dir` 下包含：
+
+| 文件 | 说明 |
+|---|---|
+| `topk_positives.json/.csv` | 前 k 条正样本对 |
+| `formatted_data.json` | 特征 + 方法可用性 |
+| `methods_stat.json` | 方法可用性统计 |
+| `final_dataset.jsonl/.csv` | 最终困难负样本数据集 |
+| `evaluation_report.json` | 评估指标（`--evaluate` 时生成） |
+
+---
+
+## 5. 核心模块说明
+
+| 模块 | 文件 | 职责 |
+|---|---|---|
+| 数据预处理 | `stage1/data_utils.py` | 读取清洗，统一映射到 id/text1/text2/score |
+| 数据筛选 | `stage1/sampler.py` | top-k 高相似正样本对 |
+| LLM 引擎 | `stage1/llm_engine.py` | 本地 LLM 封装（可选，默认 None） |
+| 特征识别 | `stage1/formatter.py` | regex + spaCy + LLM，输出 features + methods_available |
+| 构造方法库 | `stage1/constructors.py` | 10 种方法，失败返回 None |
+| 调度器 | `stage1/main_generator.py` | 按方法优先级生成 text3 |
+| 评估 | `stage1/evaluator.py` | S1/S2/Gap 计算，可视化 |
+
+---
+
+## 6. 特征识别层级
+
+```
+text2
+  ├─ 规则（正则）：numbers / logic_words / sequence_words / degree_words / negations / pronouns
+  ├─ spaCy（可选）：entities / subject_candidates / object_candidates（nsubj/dobj 依存分析）
+  └─ LLM（可选）：通过 prompts.py 的结构化 JSON prompt 抽取
+```
+
+spaCy 未安装时自动降级，仅规则特征可用；`role_swap` 等依赖 nsubj/dobj 的方法将跳过。
+
+---
+
+## 7. 评估指标
+
+| 指标 | 说明 |
+|---|---|
+| S1 = sim(text1, text2) | 正样本相似度（angle_emb 余弦） |
+| S2 = sim(text1, text3) | 困难负样本相似度 |
+| Gap = S1 - S2 | 越大代表 text3 越"难" |
+| validity_ratio | S2 < S1 的比例 |
+| method_contribution | 各方法 Gap 均值 |
+
+Stage 1（99 samples）基准结果：Gap 均值 **0.712**，有效率 **97.98%**。

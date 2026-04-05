@@ -1,89 +1,139 @@
+# Stage 2：NLI 困难负样本构造设计说明
 
 ---
 
-# 二阶段：规范化模块化的困难负样本训练集构造 Pipeline 设计说明
-
 ## 1. 项目目标
 
-以 nli_for_simcse 的三元组数据（{anchor, positive, negative}）为基础，自动化构建高质量、可控的困难负样本（hard negative），扩展为四元组 {anchor, positive, negative, hard_negative}，为对比学习等任务提供更具挑战性的训练集。
+以 nli_for_simcse 的三元组数据 `{anchor, positive, negative}` 为基础，自动化构建高质量、可控的困难负样本（hard negative），扩展为四元组 `{anchor, positive, negative, hard_negative}`，为对比学习等任务提供更具挑战性的训练集。
+
+---
 
 ## 2. 总体流程
 
-1. **数据预处理**  
-   - 输入：原始 nli 三元组数据（jsonl）
-   - 输出：标准化三元组（id, anchor, pos, neg）
-
-2. **样本采样（可选）**  
-   - 支持对原始数据进行采样或筛选，便于实验和调试。
-
-3. **实体识别与特征抽取**  
-   - 对 positive 句子进行实体/特征识别，支持两种方式：
-     - 正则表达式（规则法）
-     - 开源 LLM（如 Qwen）模型识别
-   - 仅允许每个句子应用一种构造方法。
-
-4. **困难负样本构造方法实现**  
-   - 参考 hard_neg_construction_method.md 中的方法，逐一实现。
-   - 每种方法均需支持两种实体识别方式（Regular/LLM）。
-   - 典型方法如：直接否定、程度副词、数值变换、实体代词替换等。
-
-5. **困难负样本生成**  
-   - 对 positive 应用选定方法，生成 hard_negative。
-   - 记录方法、替换日志、统计信息。
-
-6. **数据结构与输出组织**  
-   - 目录结构规范，便于后续扩展和复现。
-   - 每种方法、每种识别方式分别存储结果、统计和日志。
-
-7. **测试与训练脚本（预留）**  
-   - 当前阶段仅实现训练集构建，inference 和 train 相关内容单独归档。
-
-## 3. 目录与数据结构规范
-
 ```
-Data/
-├── original_data/
-│   └── nli_train.jsonl
-├── preprocessed_data/
-│   └── preprocessed_data.json  # {id, anchor, pos, neg}
-├── processed_data/
-│   └── <method_name>/
-│       └── difference.md       # 两种方法构造差异说明
-│       └── LLM/
-│       │   ├── method_stat.json
-│       │   ├── constructed_data.json  # {id, pos, neg, hard_neg}
-│       │   └── construction_log
-│       └── Regular/
-│           ├── method_stat.json
-│           ├── constructed_data.json
-│           └── construction_log
-│   └── ...（每种方法同上结构）
+原始数据（parquet / jsonl）
+    ↓
+数据加载与采样（stage2/data_loader.py）
+    ↓  NLIRecord(id, anchor, pos, neg)
+特征提取（stage2/feature_extractor.py）
+    ├─ regex：numbers / negations / logic_words / degree_words / pronouns
+    ├─ regex 实体识别（降级方案，无需 spaCy）
+    └─ spaCy（可选）：entities / subject_candidates / object_candidates
+    ↓
+困难负样本构造（stage2/constructors.py × 10 方法）
+    ├─ 每条样本对所有方法独立运行
+    └─ 失败返回 None，成功返回 hard_neg
+    ↓
+结果存储（stage2/builder.py → PipelineRunner）
+    ├─ constructed_data.json
+    ├─ method_stat.json
+    └─ construction_summary.txt
+    ↓
+汇总分析（stage2/analyzer.py）
+    └─ difference.md（各方法对比）
 ```
 
-## 4. 关键实现要点
+---
 
-- **实体识别与替换**  
-  - 每种方法均需实现正则与 LLM 两种 pipeline，便于对比。
-  - construction_log 需详细记录识别、替换、失败等统计。
+## 3. 目录结构
 
-- **方法选择与应用**  
-  - 每个 positive 句子仅应用一种方法，方法选择可配置或自动分配。
+```
+hard_neg/
+├── stage2/                     # 核心代码
+│   ├── data_loader.py
+│   ├── feature_extractor.py
+│   ├── constructors.py
+│   ├── builder.py
+│   ├── analyzer.py
+│   └── run_stage2.py
+└── data/stage2/
+    ├── preprocessed/           # 预处理后数据（不入库）
+    └── processed/
+        └── <method_name>/
+            └── Regular/
+                ├── constructed_data.json   # 构造结果（不入库）
+                ├── method_stat.json        # 统计文件
+                ├── construction_log.jsonl  # 逐条日志（不入库）
+                └── construction_summary.txt
+```
 
-- **可扩展性**  
-  - 新增方法时，按上述目录规范扩展即可。
-  - 支持后续加入更多识别模型或构造策略。
+---
 
-- **日志与统计**  
-  - 每次构造需输出 method_stat.json（方法统计）、construction_log（详细日志）、difference.md（两种方法差异分析）。
+## 4. 关键设计决策
 
-## 5. 后续扩展建议
+### 4.1 每方法独立运行（vs Stage 1 的 first-method-wins）
 
-- **inference/ 目录**：将评估、推理相关脚本和结果单独归档，便于管理。
-- **train/ 目录**：后续训练脚本、配置等单独管理。
-- **方法自动选择**：可根据特征自动分配最优构造方法。
+Stage 1 使用 auto 模式：按优先级尝试方法，成功即停止。结果导致 `direct_negation_attack`（第 4 优先级）抢占 59% 的样本，后续方法几乎没有机会。
 
-## 6. 参考与约定
+Stage 2 改为**每方法独立运行**：每条样本对所有 10 种方法各跑一遍，独立记录成功/失败。这样：
+- 可以精确统计每种方法的真实成功率
+- 便于后续按最优方法分配（而非 first-method-wins）
 
-- 具体构造方法详见 hard_neg_construction_method.md。
-- 代码实现风格、接口、数据格式等，优先参考现有 pipeline 设计。
+### 4.2 实体识别降级策略
 
+Stage 1 的 `entities` 字段完全依赖 spaCy，spaCy 未安装时始终为空，导致 `entity_pronoun_substitution` 等方法在无 spaCy 时完全失效。
+
+Stage 2 实现 regex 降级方案（`_extract_entities_regex`）：
+1. 称谓+姓名模式（`Dr. Smith`）
+2. 大写词序列（过滤 `_COMMON_CAPS` 词表）
+3. 全大写缩写（`NASA`、`WHO`）
+
+无 spaCy 时也能识别 50%+ 的实体。
+
+### 4.3 真实实体替换表
+
+Stage 1 的兜底策略是 "another X"（如 "another John"），语义扰动效果差。Stage 2 引入 ~80 条目的真实替换表：
+
+- 人名：John↔Michael, Mary↔Sarah, David↔James, ...
+- 地名：Paris↔London, Tokyo↔Berlin, New York↔Los Angeles, ...
+- 机构：Google↔Apple, Harvard↔Yale, NASA↔ESA, ...
+
+---
+
+## 5. 10 种构造方法概览
+
+| 方法 | Stage 2 成功率 | spaCy 必须 |
+|---|---|---|
+| premise_disruption | 100% | ❌ |
+| direct_negation_attack | 91.9% | ❌ |
+| role_swap | 66.4% | ✅ |
+| entity_pronoun_substitution | 20.3% | 可选 |
+| double_negation_attack | 8.1% | ❌ |
+| scope_degree_scaling | 7.5% | ❌ |
+| logical_operator_rewrite | 5.2% | ❌ |
+| concept_hierarchy_shift | 3.9% | 可选 |
+| temporal_causal_inversion | 1.9% | ❌ |
+| numeric_metric_transform | 1.6% | ❌ |
+
+> 详细方法说明见 [hard_neg_construction_method.md](hard_neg_construction_method.md)
+
+---
+
+## 6. 运行命令
+
+```bash
+# 全量运行（推荐）
+python stage2/run_stage2.py \
+    --input_path data/raw/train-00000-of-00001.parquet \
+    --output_base data/stage2 \
+    --sample_size 1000 \
+    --methods all \
+    --recognizer regular
+
+# 单方法调试
+python stage2/run_stage2.py \
+    --input_path data/raw/train-00000-of-00001.parquet \
+    --output_base data/stage2 \
+    --sample_size 100 \
+    --methods role_swap \
+    --recognizer regular
+```
+
+---
+
+## 7. 后续扩展建议
+
+- **自动方法选择**：根据特征分配最优方法，替代当前的 first-method-wins 聚合逻辑
+- **扩充 `concept_hierarchy_shift` 词表**：接入 WordNet hypernym/hyponym，将成功率从 3.9% 提升至 20%+
+- **LLM 路径**：`builder.py` 已预留 `llm_engine` 参数，可接入 Qwen 等本地模型
+- **angle_emb 评估**：Stage 2 尚未运行评估，可复用 `stage1/evaluator.py` 对 hard_neg 质量打分
