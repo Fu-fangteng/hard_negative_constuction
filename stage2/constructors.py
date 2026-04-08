@@ -33,7 +33,7 @@ from stage1.constructors import (
     premise_disruption,
     _replace_pronoun,          # Stage 1 内部代词替换，直接复用
 )
-from stage1.llm_engine import LocalLLMEngine
+from stage2.prompts import CONSTRUCTION_SYSTEM_PROMPT, build_construction_prompt
 
 # ── 实体替换表（人名 / 地名 / 机构）────────────────────────────────────────
 
@@ -154,6 +154,53 @@ def entity_pronoun_substitution(
     return None
 
 
+# ── LLM 直接构造（LLM 路径专用）─────────────────────────────────────────
+
+def _parse_llm_output(raw: str, original: str) -> Optional[str]:
+    """
+    解析并验证 LLM 构造输出。
+    - 去除首尾引号和多余空白
+    - 过滤掉模型可能回显的 "Modified sentence:" 等前缀
+    - 验证输出与原文不同
+    """
+    if not raw:
+        return None
+    out = raw.strip().strip('"').strip("'").strip()
+    # 模型有时会重复 prompt 的末尾标签
+    for prefix in (
+        "Modified sentence:", "Answer:", "Output:", "Result:",
+        "Modified:", "Sentence:",
+    ):
+        if out.lower().startswith(prefix.lower()):
+            out = out[len(prefix):].strip()
+    out = out.strip().strip('"').strip("'")
+    if not out:
+        return None
+    # 规范化空白后比较（大小写不敏感）
+    if " ".join(out.lower().split()) == " ".join(original.lower().split()):
+        return None
+    return out
+
+
+def _apply_llm_construction(method_name: str, text: str, llm_engine) -> Optional[str]:
+    """
+    调用 Qwen3 直接生成困难负样本。
+    返回 None 表示构造失败（LLM 输出无效或与原文相同）。
+    """
+    try:
+        user_prompt = build_construction_prompt(method_name, text)
+    except ValueError:
+        return None
+    try:
+        raw = llm_engine.generate(
+            system_prompt=CONSTRUCTION_SYSTEM_PROMPT,
+            user_prompt=user_prompt,
+        )
+        return _parse_llm_output(raw, text)
+    except Exception:
+        return None
+
+
 # ── 统一调度入口 ──────────────────────────────────────────────────────────
 
 _METHOD_REGISTRY = {
@@ -175,10 +222,21 @@ def apply_method(
     formatted_item: Dict[str, Any],
     text: str,
     features: Dict[str, Any],
-    llm_engine: Optional[LocalLLMEngine] = None,
+    llm_engine: Optional[Any] = None,
 ) -> Optional[str]:
+    """
+    构造调度入口。
+
+    - LLM 路径（llm_engine 非 None 且 ready）：
+        直接调用 Qwen3 生成扰动句，不使用规则。
+        失败（输出为空/与原文相同）时返回 None——不做 fallback。
+    - Regular 路径（llm_engine 为 None）：
+        完全走规则逻辑。
+    """
+    if llm_engine is not None and getattr(llm_engine, "ready", False):
+        return _apply_llm_construction(method_name, text, llm_engine)
+
     fn = _METHOD_REGISTRY.get(method_name)
     if fn is None:
         raise ValueError(f"Unknown method: {method_name!r}")
-    return fn(formatted_item=formatted_item, text=text,
-              features=features, llm_engine=llm_engine)
+    return fn(formatted_item=formatted_item, text=text, features=features)

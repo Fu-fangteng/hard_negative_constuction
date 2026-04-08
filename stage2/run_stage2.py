@@ -24,7 +24,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from stage1.llm_engine import GenerationConfig, LocalLLMEngine
+from stage2.llm_engine import Qwen3Engine
 from stage2.analyzer import (
     aggregate_final_dataset,
     build_dataset_methods_stat,
@@ -62,7 +62,7 @@ def main() -> None:
                         choices=["regular", "llm", "both"],
                         help="特征识别方式")
     parser.add_argument("--llm_model",   default="",
-                        help="本地 LLM 模型路径（--recognizer=llm/both 时需要）")
+                        help="Qwen3 模型路径或 HF model ID（默认 Qwen/Qwen3-1.7B）")
     parser.add_argument("--seed",        type=int, default=42)
     args = parser.parse_args()
 
@@ -73,14 +73,11 @@ def main() -> None:
     # ── 加载 LLM（如需要）───────────────────────────────────────────────
     llm_engine = None
     if "LLM" in recognizers:
-        if not args.llm_model:
-            print("[WARN] --recognizer 含 LLM 但未指定 --llm_model，跳过 LLM 路径。")
-            recognizers = [r for r in recognizers if r != "LLM"]
-        else:
-            print(f"[LLM] Loading {args.llm_model} ...")
-            llm_engine = LocalLLMEngine(model_name_or_path=args.llm_model)
-            llm_engine.load()
-            print("[LLM] Ready.")
+        model_path = args.llm_model or "Qwen/Qwen3-1.7B"
+        print(f"[LLM] Loading Qwen3: {model_path} ...")
+        llm_engine = Qwen3Engine(model_name_or_path=model_path)
+        llm_engine.load()
+        print("[LLM] Ready.")
 
     # ── Step 1: 加载 & 预处理 ────────────────────────────────────────────
     print(f"\n[STEP 1] Loading data from {args.input_path}")

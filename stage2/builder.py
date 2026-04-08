@@ -13,12 +13,11 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from stage1.llm_engine import LocalLLMEngine
 from stage2.constructors import apply_method
 from stage2.data_loader import NLIRecord
 from stage2.feature_extractor import count_method_features, extract_llm, extract_regular
@@ -74,7 +73,7 @@ class PipelineRunner:
         method_name: str,
         recognizer_type: str,        # "Regular" 或 "LLM"
         output_dir: Path,
-        llm_engine: Optional[LocalLLMEngine] = None,
+        llm_engine: Optional[Any] = None,
     ) -> None:
         self.records = records
         self.method_name = method_name

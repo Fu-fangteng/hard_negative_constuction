@@ -18,19 +18,19 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional  # noqa: F401
 
 # ── 引入 Stage 1 已验证的提取函数 ──────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from stage1.formatter import (
-    _llm_extract,
     _merge_features,
+    _parse_llm_json,
     _regex_extract,
     _safe_spacy_extract,
 )
-from stage1.llm_engine import LocalLLMEngine
+from stage2.prompts import FEATURE_SYSTEM_PROMPT, build_feature_user_prompt
 
 # ── 正则实体识别所需常量 ────────────────────────────────────────────────────
 
@@ -125,11 +125,30 @@ def extract_regular(text: str) -> Dict[str, List[str]]:
     return _merge_features(regex_feats, entity_feats, spacy_feats)
 
 
-def extract_llm(text: str, llm_engine: Optional[LocalLLMEngine]) -> Dict[str, List[str]]:
-    """LLM 路径，与 Stage 1 完全一致。llm_engine=None 时返回 {}。"""
-    if llm_engine is None:
+def extract_llm(text: str, llm_engine: Optional[Any]) -> Dict[str, List[str]]:
+    """
+    LLM 特征提取路径（使用 Qwen3 或任何实现了 .generate() 接口的引擎）。
+    llm_engine=None 或未加载时返回 {}。
+    """
+    if llm_engine is None or not getattr(llm_engine, "ready", False):
         return {}
-    return _llm_extract(text, llm_engine)
+    try:
+        response = llm_engine.generate(
+            system_prompt=FEATURE_SYSTEM_PROMPT,
+            user_prompt=build_feature_user_prompt(text),
+        )
+    except Exception:
+        return {}
+
+    parsed = _parse_llm_json(response)
+    if not isinstance(parsed, dict):
+        return {}
+
+    normalized: Dict[str, List[str]] = {}
+    for key, value in parsed.items():
+        if isinstance(value, list):
+            normalized[key] = [str(v).strip() for v in value if str(v).strip()]
+    return normalized
 
 
 def count_method_features(features: Dict[str, Any], method_name: str) -> int:
