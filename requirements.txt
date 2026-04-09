@@ -1,18 +1,20 @@
-numpy
+# Core ML
+torch>=2.1.0
+transformers>=4.40.0
+accelerate>=0.27.0
+safetensors>=0.4.0
 
-# Similarity backend (used in src/evaluator.py and your evaluate.py reference)
-angle-emb
+# Data
+pandas>=2.0.0
+pyarrow>=14.0.0
+numpy>=1.24.0
 
-# Optional plotting for evaluator (auto-skipped if not installed)
-matplotlib
+# NLP
+spacy>=3.7.0
 
-# Optional: LLM feature extraction backend (used in src/llm_engine.py)
-transformers
-torch
+# Stage 1 evaluation
+angle_emb>=0.5.0
 
-# Optional: spaCy rule-based hints in src/formatter.py
-spacy
-
-# Optional: data analysis helpers (if you extend scripts later)
-pandas
-pyarrow         # parquet backend for pandas
+# Utils
+tqdm>=4.65.0
+pytest>=8.0.0
