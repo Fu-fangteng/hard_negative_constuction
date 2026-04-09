@@ -185,20 +185,21 @@ def _parse_llm_output(raw: str, original: str) -> Optional[str]:
 def _apply_llm_construction(method_name: str, text: str, llm_engine) -> Optional[str]:
     """
     调用 Qwen3 直接生成困难负样本。
-    返回 None 表示构造失败（LLM 输出无效或与原文相同）。
+
+    - 成功：返回修改后的句子
+    - 无法修改（与原文相同或空）：返回 None
+    - 异常：向上抛出，由 builder.py 统一捕获记录（failure_reason="exception"）
     """
     try:
         user_prompt = build_construction_prompt(method_name, text)
     except ValueError:
         return None
-    try:
-        raw = llm_engine.generate(
-            system_prompt=CONSTRUCTION_SYSTEM_PROMPT,
-            user_prompt=user_prompt,
-        )
-        return _parse_llm_output(raw, text)
-    except Exception:
-        return None
+    # 不在此处捕获异常——让 builder.py 的外层 try-except 记录详细错误
+    raw = llm_engine.generate(
+        system_prompt=CONSTRUCTION_SYSTEM_PROMPT,
+        user_prompt=user_prompt,
+    )
+    return _parse_llm_output(raw, text)
 
 
 # ── 统一调度入口 ──────────────────────────────────────────────────────────

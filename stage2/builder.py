@@ -114,17 +114,30 @@ class PipelineRunner:
 
                 # ── 构造 hard_neg ─────────────────────────────────────────
                 hard_neg: Optional[str] = None
+                raw_llm_output: Optional[str] = None   # LLM 原始输出（调试用）
                 replacement: Optional[str] = None
                 failure_reason: Optional[str] = None
 
                 try:
-                    raw = apply_method(
-                        method_name=self.method_name,
-                        formatted_item={},
-                        text=record.pos,
-                        features=features,
-                        llm_engine=self.llm_engine if self.recognizer_type == "LLM" else None,
-                    )
+                    if self.recognizer_type == "LLM" and self.llm_engine is not None:
+                        # LLM 路径：先拿原始输出以便日志记录，再解析
+                        from stage2.constructors import _apply_llm_construction, _parse_llm_output
+                        from stage2.prompts import CONSTRUCTION_SYSTEM_PROMPT, build_construction_prompt
+                        user_prompt = build_construction_prompt(self.method_name, record.pos)
+                        raw_llm_output = self.llm_engine.generate(
+                            system_prompt=CONSTRUCTION_SYSTEM_PROMPT,
+                            user_prompt=user_prompt,
+                        )
+                        raw = _parse_llm_output(raw_llm_output, record.pos)
+                    else:
+                        raw = apply_method(
+                            method_name=self.method_name,
+                            formatted_item={},
+                            text=record.pos,
+                            features=features,
+                            llm_engine=None,
+                        )
+
                     if raw is None:
                         failure_reason = "no_feature_found"
                         failure_reasons["no_feature_found"] += 1
@@ -169,11 +182,12 @@ class PipelineRunner:
                     "recognizer": self.recognizer_type,
                     "input": record.pos,
                     "features_found": {k: v for k, v in features.items() if v},
-                    "replacement": replacement,
+                    "raw_llm_output": raw_llm_output,   # LLM 原始生成，用于 debug
                     "output": hard_neg,
+                    "replacement": replacement,
                     "success": hard_neg is not None,
-                    "extraction_error": extraction_error,
                     "failure_reason": failure_reason,
+                    "extraction_error": extraction_error,
                     "time_ms": elapsed_ms,
                 }, ensure_ascii=False) + "\n")
 
