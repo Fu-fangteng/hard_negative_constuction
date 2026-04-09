@@ -10,7 +10,7 @@ Stage 2 LLM Engine — Qwen3 Wrapper
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 
@@ -115,13 +115,15 @@ class Qwen3Engine:
         )
         model_inputs = self._tokenizer([text], return_tensors="pt").to(self._model.device)
 
-        generated_ids = self._model.generate(
-            **model_inputs,
-            max_new_tokens=cfg.max_new_tokens,
-            do_sample=cfg.do_sample,
-            temperature=cfg.temperature if cfg.do_sample else None,
-            top_p=cfg.top_p if cfg.do_sample else None,
-        )
+        gen_kwargs: dict = {"max_new_tokens": cfg.max_new_tokens}
+        if cfg.do_sample:
+            gen_kwargs["do_sample"] = True
+            gen_kwargs["temperature"] = cfg.temperature
+            gen_kwargs["top_p"] = cfg.top_p
+        else:
+            gen_kwargs["do_sample"] = False
+
+        generated_ids = self._model.generate(**model_inputs, **gen_kwargs)
 
         output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()
 

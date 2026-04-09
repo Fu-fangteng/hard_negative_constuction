@@ -18,7 +18,7 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional  # noqa: F401
+from typing import Any, Dict, List, Optional
 
 # ── 引入 Stage 1 已验证的提取函数 ──────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parents[1]

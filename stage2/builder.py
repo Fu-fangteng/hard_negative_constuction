@@ -101,7 +101,9 @@ class PipelineRunner:
                     if self.recognizer_type == "Regular":
                         features = extract_regular(record.pos)
                     else:
-                        features = extract_llm(record.pos, self.llm_engine)
+                        # LLM 路径：end-to-end 直接构造，不需要特征提取
+                        # 跳过额外的 LLM 调用，节省推理时间
+                        features = {}
                 except Exception as exc:
                     features = {}
                     extraction_error = f"{type(exc).__name__}: {exc}"
