@@ -47,14 +47,31 @@ def _validate(original: str, generated: Optional[str]) -> Optional[str]:
 
 
 def _diff_summary(original: str, modified: str) -> Optional[str]:
-    orig_toks = original.split()
-    mod_toks = modified.split()
-    for o, m in zip(orig_toks, mod_toks):
-        if o != m:
-            return f"{o} → {m}"
-    if len(orig_toks) != len(mod_toks):
-        return f"[length {len(orig_toks)} → {len(mod_toks)} tokens]"
-    return None
+    """
+    计算 original → modified 的词级别变化摘要。
+    使用 \b\w+\b 分词，忽略标点变化，准确捕获增删替换的词。
+    """
+    import re
+    def _words(s: str):
+        return re.findall(r"\b\w+\b", s.lower())
+
+    orig = _words(original)
+    mod  = _words(modified)
+    if orig == mod:
+        return "[punctuation only]"
+
+    orig_set = set(orig)
+    mod_set  = set(mod)
+    added   = [w for w in mod  if w not in orig_set]
+    removed = [w for w in orig if w not in mod_set]
+
+    if added and removed:
+        return f"{', '.join(removed)} → {', '.join(added)}"
+    elif added:
+        return f"added: {', '.join(added)}"
+    elif removed:
+        return f"removed: {', '.join(removed)}"
+    return "[reordered]"
 
 
 @dataclass

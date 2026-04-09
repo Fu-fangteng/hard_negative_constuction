@@ -10,11 +10,12 @@ Stage 2 LLM Prompts
 2. 困难负样本构造（Hard Negative Construction）
    - CONSTRUCTION_SYSTEM_PROMPT
    - build_construction_prompt(method_name, text) -> str
-   每种方法对应一个独立的 prompt 模板，指导 LLM 生成特定类型的扰动。
 
 设计原则：
-  - 构造 prompt 只要求 LLM 输出修改后的句子，不需要解释
-  - 特征提取 prompt 要求返回严格 JSON，字段与 Regular 路径完全一致
+  - 每种方法提供 2-3 个示例，引导小模型（1.7B）理解任务
+  - 明确说明"只输出修改后的句子"，不要解释
+  - 不在用户消息末尾加 "Modified sentence:" 等补全式提示
+    （chat 模型不需要补全提示，示例已经足够引导输出格式）
 """
 from __future__ import annotations
 
@@ -45,7 +46,6 @@ FEATURE_SYSTEM_PROMPT = (
 
 
 def build_feature_user_prompt(text: str) -> str:
-    """构建特征提取的 user prompt。"""
     schema_text = json.dumps(FEATURE_SCHEMA, ensure_ascii=False, indent=2)
     return (
         "Extract lexical and semantic features from the sentence below.\n\n"
@@ -64,119 +64,138 @@ def build_feature_user_prompt(text: str) -> str:
 # ══════════════════════════════════════════════════════════════════════════════
 
 CONSTRUCTION_SYSTEM_PROMPT = (
-    "You are a hard negative example generator for NLP contrastive learning. "
-    "Your task is to make a small, targeted modification to a sentence as instructed. "
-    "Output ONLY the modified sentence — no explanations, no quotes, no extra text."
+    "You are a sentence rewriting assistant. "
+    "Follow the instruction exactly and output only the rewritten sentence. "
+    "Do not explain, do not add any other text."
 )
 
-# 每种方法的 user prompt 模板，{text} 为占位符
 _CONSTRUCTION_TEMPLATES: Dict[str, str] = {
 
-    "numeric_metric_transform": (
-        "Task: Change one or more numbers in the sentence to different values.\n"
-        "Rules:\n"
-        "- Keep all non-numeric parts exactly the same.\n"
-        "- The new number(s) must be noticeably different (not just ±0.1).\n"
-        "- Preserve units (%, $, km, etc.) if present.\n\n"
-        "Sentence: {text}\n\n"
-        "Modified sentence:"
-    ),
+    "numeric_metric_transform": """\
+Rewrite the sentence by changing one or more numbers to different values.
+Keep all non-numeric words exactly the same.
 
-    "entity_pronoun_substitution": (
-        "Task: Replace a name or pronoun in the sentence with a different one.\n"
-        "Rules:\n"
-        "- If there is a gendered pronoun (he/she, him/her, his/her), swap it.\n"
-        "- Otherwise, replace a person name, place name, or organization with a "
-        "plausible alternative (e.g. John→Michael, Paris→London, Google→Apple).\n"
-        "- Keep everything else exactly the same.\n\n"
-        "Sentence: {text}\n\n"
-        "Modified sentence:"
-    ),
+Examples:
+- "The temperature rose from 20°C to 30°C." → "The temperature rose from 35°C to 50°C."
+- "He ran 5 miles every day." → "He ran 2 miles every day."
+- "About 40% of voters supported the bill." → "About 75% of voters supported the bill."
 
-    "scope_degree_scaling": (
-        "Task: Change a quantifier or degree word in the sentence to alter its scope or intensity.\n"
-        "Rules:\n"
-        "- Replace one word from: all→some, most→few, always→sometimes, "
-        "never→sometimes, must→might, very→slightly, completely→partially.\n"
-        "- Keep everything else exactly the same.\n\n"
-        "Sentence: {text}\n\n"
-        "Modified sentence:"
-    ),
+Now rewrite (output only the result):
+{text}""",
 
-    "direct_negation_attack": (
-        "Task: Negate the main claim of the sentence by inserting 'not'.\n"
-        "Rules:\n"
-        "- Add 'not' after the first auxiliary verb (is/are/was/were/can/will/do/does/did/has/have).\n"
-        "- If no auxiliary verb exists, add 'does not' or 'did not' before the main verb.\n"
-        "- Keep everything else exactly the same.\n\n"
-        "Sentence: {text}\n\n"
-        "Modified sentence:"
-    ),
+    "entity_pronoun_substitution": """\
+Rewrite the sentence by replacing one name or pronoun with a different one.
+Keep everything else exactly the same.
 
-    "double_negation_attack": (
-        "Task: Remove an existing negation from the sentence to flip its polarity.\n"
-        "Rules:\n"
-        "- Remove one negation word: not, never, no, nobody, nothing, none, without.\n"
-        "- If the sentence has a contraction like 'isn't', convert it to 'is'.\n"
-        "- Keep everything else exactly the same.\n\n"
-        "Sentence: {text}\n\n"
-        "Modified sentence:"
-    ),
+Examples:
+- "John went to Paris." → "Michael went to London."
+- "She gave him the book." → "He gave her the book."
+- "Google acquired the startup." → "Apple acquired the startup."
 
-    "logical_operator_rewrite": (
-        "Task: Replace a logical connective to change the logical relationship.\n"
-        "Rules:\n"
-        "- Use one of these substitutions: because→although, although→because, "
-        "if→unless, unless→if, therefore→however, however→therefore, so→but, "
-        "since→while, when→while, while→when.\n"
-        "- Keep everything else exactly the same.\n\n"
-        "Sentence: {text}\n\n"
-        "Modified sentence:"
-    ),
+Now rewrite (output only the result):
+{text}""",
 
-    "role_swap": (
-        "Task: Swap the subject and the object of the sentence.\n"
-        "Rules:\n"
-        "- Exchange who is doing the action and who is receiving it.\n"
-        "- Keep the verb phrase exactly the same.\n"
-        "- Example: 'The dog chased the cat.' → 'The cat chased the dog.'\n\n"
-        "Sentence: {text}\n\n"
-        "Modified sentence:"
-    ),
+    "scope_degree_scaling": """\
+Rewrite the sentence by changing one quantifier or degree word to its opposite or a weaker/stronger alternative.
+Keep everything else exactly the same.
 
-    "temporal_causal_inversion": (
-        "Task: Swap a temporal marker to reverse the order of events.\n"
-        "Rules:\n"
-        "- Use one of: before↔after, first↔last, first→finally, previously→later, "
-        "later→previously, then→before.\n"
-        "- Keep everything else exactly the same.\n\n"
-        "Sentence: {text}\n\n"
-        "Modified sentence:"
-    ),
+Examples:
+- "All students passed the exam." → "Few students passed the exam."
+- "She always arrives on time." → "She rarely arrives on time."
+- "The medicine must be taken daily." → "The medicine may be taken daily."
 
-    "concept_hierarchy_shift": (
-        "Task: Replace a specific noun with a more general category (hypernym) or "
-        "a different category at the same level.\n"
-        "Rules:\n"
-        "- Examples: dog→animal, car→vehicle, apple→fruit, doctor→person, "
-        "soccer→sport, piano→instrument.\n"
-        "- Replace only one noun. Keep everything else exactly the same.\n\n"
-        "Sentence: {text}\n\n"
-        "Modified sentence:"
-    ),
+Now rewrite (output only the result):
+{text}""",
 
-    "premise_disruption": (
-        "Task: Add a contradictory prefix to the beginning of the sentence.\n"
-        "Rules:\n"
-        "- Prepend exactly one of these phrases:\n"
-        "  'Contrary to what was stated, '\n"
-        "  'Despite the opposite being true, '\n"
-        "  'Although the evidence suggests otherwise, '\n"
-        "- Lowercase the original sentence's first letter after the prefix.\n"
-        "- Keep the rest of the sentence unchanged.\n\n"
-        "Sentence: {text}\n\n"
-        "Modified sentence:"
-    ),
+    "direct_negation_attack": """\
+Rewrite the sentence to negate its main claim by inserting "not" after the first auxiliary verb.
+If there is no auxiliary verb, add "does not" or "did not" before the main verb.
+Keep everything else exactly the same.
+
+Examples:
+- "She is running fast." → "She is not running fast."
+- "They can swim well." → "They cannot swim well."
+- "He studies medicine." → "He does not study medicine."
+- "The dog chased the cat." → "The dog did not chase the cat."
+
+Now rewrite (output only the result):
+{text}""",
+
+    "double_negation_attack": """\
+Rewrite the sentence by removing one negation word to flip its polarity.
+If the sentence has a contraction like "isn't" or "don't", expand and remove the "not".
+Keep everything else exactly the same.
+
+Examples:
+- "She is not happy." → "She is happy."
+- "They don't like vegetables." → "They like vegetables."
+- "He never goes to the gym." → "He goes to the gym."
+
+Now rewrite (output only the result):
+{text}""",
+
+    "logical_operator_rewrite": """\
+Rewrite the sentence by replacing one logical connective with a different one that changes the logical relationship.
+Use these substitutions: because↔although, if↔unless, therefore↔however, so↔but, since↔while.
+Keep everything else exactly the same.
+
+Examples:
+- "She passed because she studied hard." → "She passed although she studied hard."
+- "I stayed home because it was raining." → "I stayed home although it was raining."
+- "He left early so he could catch the train." → "He left early but he could catch the train."
+
+Now rewrite (output only the result):
+{text}""",
+
+    "role_swap": """\
+Rewrite the sentence by swapping the subject and the object (who does what to whom).
+Keep the verb and all other words exactly the same.
+
+Examples:
+- "The dog chased the cat." → "The cat chased the dog."
+- "Mary helped John." → "John helped Mary."
+- "The police arrested the suspect." → "The suspect arrested the police."
+
+Now rewrite (output only the result):
+{text}""",
+
+    "temporal_causal_inversion": """\
+Rewrite the sentence by swapping one temporal marker to reverse the order of events.
+Use these substitutions: before↔after, first↔last, previously↔later, finally↔first.
+Keep everything else exactly the same.
+
+Examples:
+- "She ate dinner before watching TV." → "She ate dinner after watching TV."
+- "First mix the ingredients, then bake." → "Last mix the ingredients, then bake."
+- "He finished the report before the meeting." → "He finished the report after the meeting."
+
+Now rewrite (output only the result):
+{text}""",
+
+    "concept_hierarchy_shift": """\
+Rewrite the sentence by replacing one specific noun with a more general category word (hypernym) or a different category.
+Keep everything else exactly the same.
+
+Examples:
+- "The dog ran across the yard." → "The animal ran across the yard."
+- "She drives a car to work." → "She drives a vehicle to work."
+- "He bought an apple at the store." → "He bought a fruit at the store."
+
+Now rewrite (output only the result):
+{text}""",
+
+    "premise_disruption": """\
+Rewrite the sentence by adding a short contradictory prefix at the beginning.
+Choose one of these prefixes: "Contrary to what was stated, " / "Despite the opposite being true, " / "Although the evidence suggests otherwise, ".
+Lowercase the first letter of the original sentence after the prefix.
+
+Examples:
+- "The team won the championship." → "Contrary to what was stated, the team won the championship."
+- "Vaccines are effective." → "Despite the opposite being true, vaccines are effective."
+- "The economy is growing." → "Although the evidence suggests otherwise, the economy is growing."
+
+Now rewrite (output only the result):
+{text}""",
 }
 
 
