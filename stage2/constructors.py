@@ -159,14 +159,16 @@ def entity_pronoun_substitution(
 def _parse_llm_output(raw: str, original: str) -> Optional[str]:
     """
     解析并验证 LLM 构造输出。
-    - 去除首尾引号和多余空白
-    - 过滤掉模型可能回显的 "Modified sentence:" 等前缀
-    - 验证输出与原文不同
+    过滤以下几类无效输出：
+      1. 空输出
+      2. 与原文相同
+      3. 句末孤立的 "not"  — 语法错误（模型找不到助动词时的 fallback）
+      4. 仅将 "no" 改为 "not" — 语义几乎等价，不构成困难负样本
     """
     if not raw:
         return None
     out = raw.strip().strip('"').strip("'").strip()
-    # 模型有时会重复 prompt 的末尾标签
+    # 去除模型可能回显的 prompt 标签
     for prefix in (
         "Modified sentence:", "Answer:", "Output:", "Result:",
         "Modified:", "Sentence:",
@@ -176,9 +178,23 @@ def _parse_llm_output(raw: str, original: str) -> Optional[str]:
     out = out.strip().strip('"').strip("'")
     if not out:
         return None
-    # 规范化空白后比较（大小写不敏感）
+
+    # ── 规则 1：与原文相同（规范化空白+大小写）─────────────────────────────
     if " ".join(out.lower().split()) == " ".join(original.lower().split()):
         return None
+
+    # ── 规则 2：句末孤立 "not" — 语法错误 ─────────────────────────────────
+    # "...man not."  /  "...man not"  → 无效
+    last_word = re.sub(r"[^\w]", "", out.split()[-1]).lower() if out.split() else ""
+    if last_word == "not":
+        return None
+
+    # ── 规则 3：仅把 "no" 换成 "not" — 语义等价 ───────────────────────────
+    # e.g. "no shooting" → "not shooting"：两者均表示否定，语义高度相似
+    norm_orig = re.sub(r"\bno\b", "not", original, flags=re.IGNORECASE)
+    if " ".join(norm_orig.lower().split()) == " ".join(out.lower().split()):
+        return None
+
     return out
 
 
