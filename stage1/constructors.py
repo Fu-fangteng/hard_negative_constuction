@@ -182,23 +182,48 @@ def _has_negation(text: str) -> bool:
 
 def direct_negation_attack(formatted_item: Dict[str, Any], text: str, features: Dict[str, Any], llm_engine: Optional[LocalLLMEngine] = None) -> Optional[str]:
     """
-    Insert 'not' using common auxiliary/modal patterns.
+    Flip the truth value of a sentence by manipulating its negation:
+    - Positive sentence  → insert 'not' after first auxiliary verb
+    - Negated sentence   → remove the negation word to produce the positive claim
+      e.g. "There is usually no shooting" → "There is usually shooting"
     """
     if _has_negation(text):
+        # ── 删除否定词，将负句变正句 ──────────────────────────────────────
+        # 只处理删除后句子仍然通顺的类型：
+        #   "no"    → "no shooting" → "shooting"   ✓
+        #   "never" → "never goes"  → "goes"        ✓
+        #   "not"   → "is not"      → "is"           ✓
+        #   缩写    → "doesn't"     → "does"         ✓
+        # 不处理 none/nothing/nobody/without（删除后残句语法破坏严重）
+        for w in ["no", "never"]:
+            pat = re.compile(rf"\b{re.escape(w)}\b\s*", flags=re.IGNORECASE)
+            m = pat.search(text)
+            if m:
+                out = text[: m.start()] + text[m.end():]
+                out = re.sub(r"\s{2,}", " ", out).strip()
+                if out and out != text:
+                    return out
+        # 独立的 "not"（含前置空格一起删，避免双空格）
+        out = re.sub(r"\s+not\b", "", text, count=1, flags=re.IGNORECASE)
+        out = re.sub(r"\s{2,}", " ", out).strip()
+        if out and out != text:
+            return out
+        # 缩写：doesn't → does, isn't → is, can't → can
+        out = re.sub(r"\b(\w+?)n['']?t\b", r"\1", text, count=1, flags=re.IGNORECASE)
+        if out != text:
+            return out
         return None
 
-    # Replace first auxiliary with auxiliary + not.
+    # ── 正句：在第一个助动词后插入 not ──────────────────────────────────
     m = re.search(rf"\b{_AUX_VERBS}\b", text, flags=re.IGNORECASE)
     if m:
         aux = m.group(0)
-        insert = f"{aux} not"
-        return text[: m.start()] + insert + text[m.end() :]
+        return text[: m.start()] + f"{aux} not" + text[m.end():]
 
-    # Fallback: prepend "not" (keeps change guaranteed).
+    # Fallback: prepend "Not"
     stripped = text.strip()
     if not stripped:
         return None
-    # If sentence already starts with a capital, keep it after prefix.
     return "Not " + stripped[0].upper() + stripped[1:]
 
 
