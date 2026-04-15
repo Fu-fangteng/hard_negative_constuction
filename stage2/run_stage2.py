@@ -61,9 +61,11 @@ def main() -> None:
     parser.add_argument("--recognizer",  default="regular",
                         choices=["regular", "llm", "both"],
                         help="特征识别方式")
-    parser.add_argument("--llm_model",   default="",
+    parser.add_argument("--llm_model",      default="",
                         help="Qwen3 模型路径或 HF model ID（默认 Qwen/Qwen3-1.7B）")
-    parser.add_argument("--seed",        type=int, default=42)
+    parser.add_argument("--llm_batch_size", type=int, default=16,
+                        help="LLM 批推理大小，显存不足时调小（默认 16）")
+    parser.add_argument("--seed",           type=int, default=42)
     args = parser.parse_args()
 
     output_base  = Path(args.output_base)
@@ -102,6 +104,7 @@ def main() -> None:
                 recognizer_type=recognizer,
                 output_dir=out_dir,
                 llm_engine=llm_engine if recognizer == "LLM" else None,
+                llm_batch_size=args.llm_batch_size,
             )
             result = runner.run()
             all_results[method][recognizer] = result

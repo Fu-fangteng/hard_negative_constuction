@@ -34,8 +34,15 @@ data/raw/*.jsonl
 # Claude 本地设置
 .claude/settings.local.json
 
-# Stage 2 大型日志文件（逐行 jsonl，可本地重新生成）
+# Stage 2 大型日志/数据文件（可从原始数据重新生成，不入库）
 data/stage2/processed/*/Regular/construction_log.jsonl
 data/stage2/processed/*/Regular/constructed_data.json
+data/stage2/processed/*/LLM/construction_log.jsonl
+data/stage2/processed/*/LLM/constructed_data.json
+data/stage2/processed/dataset_methods_stat.json
+data/stage2/processed/final_dataset.jsonl
 data/stage2/preprocessed/
+
+# SLURM 作业日志
+logs/
 

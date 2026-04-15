@@ -90,15 +90,17 @@ python stage2/run_stage2.py \
     --output_base data/stage2 \
     --sample_size 1000 \
     --methods all \
-    --recognizer regular
+    --recognizer both \  (regular\llm\both)
+    --llm_model Qwen/Qwen3-1.7B
 
 # 单方法
 python stage2/run_stage2.py \
-    --input_path data/raw/train-00000-of-00001.parquet \
-    --output_base data/stage2 \
-    --sample_size 1000 \
-    --methods role_swap \
-    --recognizer regular
+      --input_path data/raw/train-00000-of-00001.parquet \
+      --output_base data/stage2 \
+      --sample_size 1000 \
+      --methods temporal_causal_inversion \
+      --recognizer both \
+      --llm_model Qwen/Qwen3-1.7B
 ```
 
 ### 输出目录结构

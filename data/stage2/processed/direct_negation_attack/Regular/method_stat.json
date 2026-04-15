@@ -2,14 +2,14 @@
   "method_name": "direct_negation_attack",
   "recognizer_type": "Regular",
   "total_samples": 1000,
-  "success_count": 919,
-  "success_ratio": 0.919,
+  "success_count": 995,
+  "success_ratio": 0.995,
   "avg_feature_count": 0.94,
   "failure_reasons": {
-    "no_feature_found": 81,
+    "no_feature_found": 5,
     "output_same_as_input": 0,
     "empty_output": 0,
     "exception": 0
   },
-  "processing_time_sec": 1212.65
+  "processing_time_sec": 152.66
 }

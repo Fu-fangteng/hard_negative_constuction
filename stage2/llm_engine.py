@@ -99,21 +99,72 @@ class Qwen3Engine:
         返回：
             模型生成文本（已去除 thinking 部分和首尾空白）
         """
+        return self.generate_batch(
+            system_prompt=system_prompt,
+            user_prompts=[user_prompt],
+            config=config,
+        )[0]
+
+    def generate_batch(
+        self,
+        system_prompt: str,
+        user_prompts: list,
+        config: Optional[GenerationConfig] = None,
+        batch_size: int = 16,
+    ) -> list:
+        """
+        批量推理，按 batch_size 分块处理以避免 OOM。
+
+        参数：
+            system_prompt : 所有样本共享的系统 prompt
+            user_prompts  : 用户 prompt 列表
+            config        : 覆盖 default_config（可选）
+            batch_size    : 每批样本数（根据显存调整，默认 16）
+
+        返回：
+            与 user_prompts 等长的生成文本列表
+        """
         if not self.ready:
             raise RuntimeError("Qwen3Engine not loaded. Call load() first.")
 
+        results: list = []
+        for start in range(0, len(user_prompts), batch_size):
+            chunk = user_prompts[start: start + batch_size]
+            results.extend(self._generate_chunk(system_prompt, chunk, config))
+        return results
+
+    def _generate_chunk(
+        self,
+        system_prompt: str,
+        user_prompts: list,
+        config: Optional[GenerationConfig] = None,
+    ) -> list:
+        """对单个 chunk 执行批推理，返回等长结果列表。"""
         cfg = config or self.default_config
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user",   "content": user_prompt},
-        ]
-        text = self._tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True,
-            enable_thinking=cfg.enable_thinking,
-        )
-        model_inputs = self._tokenizer([text], return_tensors="pt").to(self._model.device)
+
+        # 构建每条消息的 chat template 文本
+        texts = []
+        for user_prompt in user_prompts:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user",   "content": user_prompt},
+            ]
+            text = self._tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=True,
+                enable_thinking=cfg.enable_thinking,
+            )
+            texts.append(text)
+
+        # left-padding 保证 generate 时 attention 正确对齐
+        self._tokenizer.padding_side = "left"
+        model_inputs = self._tokenizer(
+            texts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+        ).to(self._model.device)
 
         gen_kwargs: dict = {"max_new_tokens": cfg.max_new_tokens}
         if cfg.do_sample:
@@ -125,15 +176,17 @@ class Qwen3Engine:
 
         generated_ids = self._model.generate(**model_inputs, **gen_kwargs)
 
-        output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()
+        results = []
+        for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids):
+            new_tokens = output_ids[len(input_ids):].tolist()
+            # 去除 thinking token（token id 151668 = </think>）
+            try:
+                index = len(new_tokens) - new_tokens[::-1].index(151668)
+            except ValueError:
+                index = 0
+            content = self._tokenizer.decode(
+                new_tokens[index:], skip_special_tokens=True
+            ).strip()
+            results.append(content)
 
-        # 去除 thinking token（token id 151668 = </think>）
-        try:
-            index = len(output_ids) - output_ids[::-1].index(151668)
-        except ValueError:
-            index = 0
-
-        content = self._tokenizer.decode(
-            output_ids[index:], skip_special_tokens=True
-        ).strip()
-        return content
+        return results

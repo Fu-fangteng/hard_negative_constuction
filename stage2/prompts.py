@@ -72,127 +72,139 @@ CONSTRUCTION_SYSTEM_PROMPT = (
 _CONSTRUCTION_TEMPLATES: Dict[str, str] = {
 
     "numeric_metric_transform": """\
-Rewrite the sentence by changing one or more numbers to different values.
-Keep all non-numeric words exactly the same.
+Make the sentence factually wrong by changing one number to a clearly different value.
+The rest of the sentence must stay exactly the same — only the number changes.
 
 Examples:
-- "The temperature rose from 20°C to 30°C." → "The temperature rose from 35°C to 50°C."
-- "He ran 5 miles every day." → "He ran 2 miles every day."
-- "About 40% of voters supported the bill." → "About 75% of voters supported the bill."
+- "He ran 5 miles every day." → "He ran 12 miles every day."
+- "About 40% of voters supported the bill." → "About 85% of voters supported the bill."
+- "The bridge was built in 1920." → "The bridge was built in 1987."
+- "She scored 95 on the test." → "She scored 42 on the test."
 
 Now rewrite (output only the result):
 {text}""",
 
     "entity_pronoun_substitution": """\
-Rewrite the sentence by replacing one name or pronoun with a different one.
-Keep everything else exactly the same.
+Make the sentence describe a different participant by swapping one pronoun or one proper name for another.
+The sentence structure and all other words must stay exactly the same.
 
 Examples:
-- "John went to Paris." → "Michael went to London."
-- "She gave him the book." → "He gave her the book."
+- "She gave him the keys." → "He gave her the keys."
+- "John won the award." → "Michael won the award."
 - "Google acquired the startup." → "Apple acquired the startup."
+- "They sent it to her." → "They sent it to him."
 
 Now rewrite (output only the result):
 {text}""",
 
     "scope_degree_scaling": """\
-Rewrite the sentence by changing one quantifier or degree word to its opposite or a weaker/stronger alternative.
-Keep everything else exactly the same.
+Change how broadly or strongly the sentence's claim applies by replacing one quantifier or modal word with one that has a clearly different strength.
+The rest of the sentence must stay exactly the same.
+
+Good substitution pairs: all↔few, always↔rarely, must↔may, many↔few, most↔some, never↔often.
 
 Examples:
 - "All students passed the exam." → "Few students passed the exam."
 - "She always arrives on time." → "She rarely arrives on time."
 - "The medicine must be taken daily." → "The medicine may be taken daily."
+- "Most residents supported the plan." → "Few residents supported the plan."
 
 Now rewrite (output only the result):
 {text}""",
 
     "direct_negation_attack": """\
-Rewrite the sentence to negate its main claim by inserting "not" after the first auxiliary verb.
-If there is no auxiliary verb, add "does not" or "did not" before the main verb.
-Keep everything else exactly the same.
+Flip the truth value of the sentence's main claim.
+- If the sentence is affirmative: insert "not" after the first auxiliary verb (is/are/was/were/can/could/will/would/has/have/had/should/must/may/might/do/does/did), or add "does not" / "did not" before the main verb if there is no auxiliary.
+- If the sentence is already negative (contains not/no/never/n't): remove the negation word to make it affirmative.
 
 Examples:
 - "She is running fast." → "She is not running fast."
 - "They can swim well." → "They cannot swim well."
 - "He studies medicine." → "He does not study medicine."
-- "The dog chased the cat." → "The dog did not chase the cat."
+- "There is no shooting in the scene." → "There is shooting in the scene."
+- "The report was never published." → "The report was published."
 
 Now rewrite (output only the result):
 {text}""",
 
     "double_negation_attack": """\
-Rewrite the sentence by removing one negation word to flip its polarity.
-If the sentence has a contraction like "isn't" or "don't", expand and remove the "not".
-Keep everything else exactly the same.
+Turn a negative sentence into a positive one by removing its negation.
+Find the negation word (not, no, never, n't contraction) and remove it so the sentence now asserts the opposite.
+Keep all other words exactly the same.
 
 Examples:
 - "She is not happy." → "She is happy."
 - "They don't like vegetables." → "They like vegetables."
 - "He never goes to the gym." → "He goes to the gym."
+- "There was no evidence of fraud." → "There was evidence of fraud."
 
 Now rewrite (output only the result):
 {text}""",
 
     "logical_operator_rewrite": """\
-Rewrite the sentence by replacing one logical connective with a different one that changes the logical relationship.
-Use these substitutions: because↔although, if↔unless, therefore↔however, so↔but, since↔while.
-Keep everything else exactly the same.
+Change the logical relationship between two parts of the sentence by swapping one connective for one with a different meaning.
+Use pairs that change the relationship: because↔although, if↔unless, therefore↔however, so↔but, since↔while, when↔while.
+Keep all other words exactly the same.
 
 Examples:
 - "She passed because she studied hard." → "She passed although she studied hard."
-- "I stayed home because it was raining." → "I stayed home although it was raining."
 - "He left early so he could catch the train." → "He left early but he could catch the train."
+- "I stayed home because it was raining." → "I stayed home although it was raining."
+- "Call me if you need help." → "Call me unless you need help."
 
 Now rewrite (output only the result):
 {text}""",
 
     "role_swap": """\
-Rewrite the sentence by swapping the subject and the object (who does what to whom).
-Keep the verb and all other words exactly the same.
+Reverse who does the action and who receives it — swap the subject and the object.
+Keep the verb, adjectives, and all other words exactly the same; only the two main participants switch places.
 
 Examples:
 - "The dog chased the cat." → "The cat chased the dog."
 - "Mary helped John." → "John helped Mary."
 - "The police arrested the suspect." → "The suspect arrested the police."
+- "The teacher praised the student." → "The student praised the teacher."
 
 Now rewrite (output only the result):
 {text}""",
 
     "temporal_causal_inversion": """\
-Rewrite the sentence by swapping one temporal marker to reverse the order of events.
-Use these substitutions: before↔after, first↔last, previously↔later, finally↔first.
-Keep everything else exactly the same.
+Reverse the order of events by changing one temporal marker to its opposite.
+Use pairs: before↔after, first↔last, previously↔later, finally↔first.
+Keep all other words exactly the same.
 
 Examples:
 - "She ate dinner before watching TV." → "She ate dinner after watching TV."
-- "First mix the ingredients, then bake." → "Last mix the ingredients, then bake."
 - "He finished the report before the meeting." → "He finished the report after the meeting."
+- "First, mix the ingredients, then bake." → "Last, mix the ingredients, then bake."
+- "Previously she had worked in finance." → "Later she had worked in finance."
 
 Now rewrite (output only the result):
 {text}""",
 
     "concept_hierarchy_shift": """\
-Rewrite the sentence by replacing one specific noun with a more general category word (hypernym) or a different category.
-Keep everything else exactly the same.
+Replace one specific noun with a different but plausible word — either a broader category (hypernym) or a different concept at the same level — so the sentence remains grammatical but describes something different.
+Keep all other words exactly the same.
 
 Examples:
 - "The dog ran across the yard." → "The animal ran across the yard."
-- "She drives a car to work." → "She drives a vehicle to work."
-- "He bought an apple at the store." → "He bought a fruit at the store."
+- "She drives a car to work." → "She drives a truck to work."
+- "He bought an apple at the store." → "He bought a mango at the store."
+- "The doctor examined the patient." → "The nurse examined the patient."
 
 Now rewrite (output only the result):
 {text}""",
 
     "premise_disruption": """\
-Rewrite the sentence by adding a short contradictory prefix at the beginning.
-Choose one of these prefixes: "Contrary to what was stated, " / "Despite the opposite being true, " / "Although the evidence suggests otherwise, ".
+Add a short contradictory phrase at the very beginning of the sentence to signal that its content conflicts with known facts.
+Use one of these openings: "Contrary to what was stated, " / "Despite the opposite being true, " / "Although the evidence suggests otherwise, " / "In theory, ".
 Lowercase the first letter of the original sentence after the prefix.
 
 Examples:
 - "The team won the championship." → "Contrary to what was stated, the team won the championship."
 - "Vaccines are effective." → "Despite the opposite being true, vaccines are effective."
 - "The economy is growing." → "Although the evidence suggests otherwise, the economy is growing."
+- "Exercise improves mental health." → "In theory, exercise improves mental health."
 
 Now rewrite (output only the result):
 {text}""",

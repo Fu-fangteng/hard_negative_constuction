@@ -8,6 +8,148 @@ from .llm_engine import LocalLLMEngine
 
 _NUMBER_PATTERN = re.compile(r"(?<!\w)([$£€]?\d+(?:,\d{3})*(?:\.\d+)?%?)(?!\w)", re.IGNORECASE)
 
+# ── Irregular past-tense → base-form lookup ──────────────────────────────────
+_IRR_PAST_TO_BASE: Dict[str, str] = {
+    "ate": "eat", "became": "become", "began": "begin", "blew": "blow",
+    "broke": "break", "brought": "bring", "built": "build", "bought": "buy",
+    "came": "come", "caught": "catch", "chose": "choose", "cut": "cut",
+    "dealt": "deal", "drew": "draw", "drove": "drive", "fell": "fall",
+    "felt": "feel", "flew": "fly", "forgot": "forget", "found": "find",
+    "froze": "freeze", "gave": "give", "got": "get", "grew": "grow",
+    "held": "hold", "heard": "hear", "hit": "hit", "hurt": "hurt",
+    "kept": "keep", "knew": "know", "knelt": "kneel", "led": "lead",
+    "leapt": "leap", "left": "leave", "let": "let", "lost": "lose",
+    "made": "make", "meant": "mean", "met": "meet", "paid": "pay",
+    "put": "put", "ran": "run", "read": "read", "rode": "ride",
+    "rose": "rise", "said": "say", "sat": "sit", "saw": "see",
+    "sent": "send", "set": "set", "shot": "shoot", "slept": "sleep",
+    "slid": "slide", "spoke": "speak", "spent": "spend", "stood": "stand",
+    "stole": "steal", "swam": "swim", "swung": "swing", "swept": "sweep",
+    "took": "take", "taught": "teach", "told": "tell", "thought": "think",
+    "threw": "throw", "understood": "understand", "woke": "wake",
+    "wore": "wear", "wept": "weep", "won": "win", "wrote": "write",
+    "went": "go",
+}
+
+# ── spaCy module-level singleton (lazy-loaded, None = untried, False = unavailable)
+_nlp_instance = None
+
+
+def _get_nlp():
+    global _nlp_instance
+    if _nlp_instance is not None:
+        return _nlp_instance
+    try:
+        import spacy
+        _nlp_instance = spacy.load("en_core_web_sm")
+    except Exception:
+        _nlp_instance = False
+    return _nlp_instance
+
+
+def _strip_ed(w: str) -> str:
+    """Strip -ed suffix → approximate base form for regular past-tense verbs."""
+    if w.endswith("ied"):                                       # tried → try
+        return w[:-3] + "y"
+    if len(w) >= 5 and w[-3] == w[-4] and w[-3] not in "aeiou":
+        return w[:-3]                                           # stopped → stop
+    # VCeD pattern: vowel + consonant + e + d → remove 'd' only (leased→lease, moved→move)
+    if (len(w) >= 4 and w[-1] == "d" and w[-2] == "e"
+            and w[-3] not in "aeiou" and len(w) >= 5 and w[-4] in "aeiou"):
+        return w[:-1]
+    return w[:-2]                                               # walked→walk, shocked→shock
+
+
+def _strip_s(w: str) -> str:
+    """Strip 3rd-person-singular -s/-es → approximate base form."""
+    if w.endswith("ies"):                       # tries → try
+        return w[:-3] + "y"
+    if w.endswith("oes"):                       # goes → go
+        return w[:-2]
+    if w.endswith("es") and len(w) > 3:
+        stem = w[:-2]
+        if stem.endswith(("s", "sh", "ch", "x", "z")):
+            return stem                         # passes→pass, reaches→reach
+        return w[:-1]                           # makes→make, takes→take
+    return w[:-1]                               # eats→eat, walks→walk
+
+
+def _negate_without_aux(text: str) -> Optional[str]:
+    """
+    Negate a simple sentence that has no auxiliary verb by inserting
+    do/does/did + not before the main verb.
+
+    Tries spaCy first (accurate tense/lemma); falls back to regex heuristics.
+    Returns None if the main verb cannot be confidently identified
+    (e.g. noun phrases, sentence fragments).
+    """
+    # ── spaCy path ────────────────────────────────────────────────────────
+    nlp = _get_nlp()
+    if nlp:
+        doc = nlp(text)
+        root = next(
+            (t for t in doc if t.dep_ == "ROOT" and t.pos_ == "VERB"),
+            None,
+        )
+        if root is None:
+            return None   # no main verb → likely a noun phrase, skip
+        morph = str(root.morph)
+        if "Tense=Past" in morph:
+            aux = "did not"
+        elif "Person=3" in morph and "Number=Sing" in morph:
+            aux = "does not"
+        else:
+            aux = "do not"
+        s, e = root.idx, root.idx + len(root.text)
+        return text[:s] + aux + " " + root.lemma_ + text[e:]
+
+    # ── Regex fallback (spaCy unavailable) ───────────────────────────────
+    # Scan tokens left-to-right; skip the first token (likely subject start).
+    # Recognise: irregular past → did not, -ed → did not, -s/-es → does not.
+    # Base-form verbs are too ambiguous to detect without POS tags → skip.
+    _SKIP = frozenset({
+        "a", "an", "the", "this", "that", "these", "those",
+        "i", "he", "she", "it", "we", "they", "you",
+        "my", "his", "her", "its", "our", "their", "your",
+        "some", "any", "all", "both", "each", "every",
+    })
+    # 常见以 -s/-es 结尾但本质上是介词/副词/名词的词，避免误判
+    _NON_VERB_S = frozenset({
+        "towards", "backwards", "forwards", "downwards", "upwards",
+        "inwards", "outwards", "afterwards", "onwards", "sideways",
+        "across", "unless", "thus", "plus", "minus", "versus",
+        "always", "sometimes", "perhaps", "series", "species",
+        "news", "yes", "its",
+    })
+    # 以这些后缀结尾的词几乎不是动词第三人称单数
+    _NON_VERB_ENDS = ("wards", "ward", "tion", "sion", "ness",
+                      "ment", "less", "ous", "ics", "ics")
+
+    spans = list(re.finditer(r"\S+", text))
+    for i, m in enumerate(spans):
+        if i == 0:
+            continue
+        w = re.sub(r"[^\w]", "", m.group()).lower()
+        if not w or w in _SKIP:
+            continue
+
+        if w in _IRR_PAST_TO_BASE:
+            base = _IRR_PAST_TO_BASE[w]
+            return text[: m.start()] + "did not " + base + text[m.end():]
+
+        if len(w) > 3 and w.endswith("ed"):
+            base = _strip_ed(w)
+            return text[: m.start()] + "did not " + base + text[m.end():]
+
+        if (len(w) > 2 and w.endswith("s")
+                and w not in _NON_VERB_S
+                and not any(w.endswith(e) for e in _NON_VERB_ENDS)
+                and not w.endswith("ss")):
+            base = _strip_s(w)
+            return text[: m.start()] + "does not " + base + text[m.end():]
+
+    return None   # couldn't identify verb confidently
+
 
 def _normalize_space(s: str) -> str:
     return " ".join(s.strip().split())
@@ -220,11 +362,9 @@ def direct_negation_attack(formatted_item: Dict[str, Any], text: str, features: 
         aux = m.group(0)
         return text[: m.start()] + f"{aux} not" + text[m.end():]
 
-    # Fallback: prepend "Not"
-    stripped = text.strip()
-    if not stripped:
-        return None
-    return "Not " + stripped[0].upper() + stripped[1:]
+    # Fallback: 尝试插入 do/does/did not（比 "Not X..." 语法更正确）
+    # 无法识别主动词时返回 None，宁可跳过也不产生语法错误输出
+    return _negate_without_aux(text)
 
 
 def double_negation_attack(formatted_item: Dict[str, Any], text: str, features: Dict[str, Any], llm_engine: Optional[LocalLLMEngine] = None) -> Optional[str]:

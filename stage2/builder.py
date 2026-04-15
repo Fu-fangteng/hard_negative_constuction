@@ -49,7 +49,7 @@ def _validate(original: str, generated: Optional[str]) -> Optional[str]:
 def _diff_summary(original: str, modified: str) -> Optional[str]:
     """
     计算 original → modified 的词级别变化摘要。
-    使用 \b\w+\b 分词，忽略标点变化，准确捕获增删替换的词。
+    使用 word-boundary 分词，忽略标点变化，准确捕获增删替换的词。
     """
     import re
     def _words(s: str):
@@ -91,16 +91,56 @@ class PipelineRunner:
         recognizer_type: str,        # "Regular" 或 "LLM"
         output_dir: Path,
         llm_engine: Optional[Any] = None,
+        llm_batch_size: int = 16,    # LLM 批推理大小，根据显存调整
     ) -> None:
         self.records = records
         self.method_name = method_name
         self.recognizer_type = recognizer_type
         self.output_dir = Path(output_dir)
         self.llm_engine = llm_engine
+        self.llm_batch_size = llm_batch_size
+
+    def _build_llm_outputs(self) -> Dict[str, str]:
+        """
+        LLM 路径：批量预生成所有样本的原始输出，返回 {record_id: raw_output}。
+        使用 generate_batch 一次性处理所有样本，显著降低推理总耗时。
+        """
+        from stage2.constructors import _parse_llm_output
+        from stage2.prompts import CONSTRUCTION_SYSTEM_PROMPT, build_construction_prompt
+
+        ids: List[str] = []
+        prompts: List[str] = []
+        skipped: Dict[str, str] = {}   # id → raw="" for invalid method
+
+        for record in self.records:
+            try:
+                prompt = build_construction_prompt(self.method_name, record.pos)
+                ids.append(record.id)
+                prompts.append(prompt)
+            except ValueError:
+                skipped[record.id] = ""
+
+        print(f"  [LLM batch] Generating {len(prompts)} samples "
+              f"(batch_size={self.llm_batch_size}) ...")
+        raw_outputs = self.llm_engine.generate_batch(
+            system_prompt=CONSTRUCTION_SYSTEM_PROMPT,
+            user_prompts=prompts,
+            batch_size=self.llm_batch_size,
+        )
+
+        result = {**skipped}
+        for rid, raw in zip(ids, raw_outputs):
+            result[rid] = raw
+        return result
 
     def run(self) -> RunResult:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         log_path = self.output_dir / "construction_log.jsonl"
+
+        # LLM 路径：批量预生成所有原始输出，避免逐条调用的巨大开销
+        llm_raw_map: Dict[str, str] = {}
+        if self.recognizer_type == "LLM" and self.llm_engine is not None:
+            llm_raw_map = self._build_llm_outputs()
 
         constructed: List[Dict] = []
         feature_counts: Dict[str, int] = {}
@@ -118,8 +158,6 @@ class PipelineRunner:
                     if self.recognizer_type == "Regular":
                         features = extract_regular(record.pos)
                     else:
-                        # LLM 路径：end-to-end 直接构造，不需要特征提取
-                        # 跳过额外的 LLM 调用，节省推理时间
                         features = {}
                 except Exception as exc:
                     features = {}
@@ -131,20 +169,14 @@ class PipelineRunner:
 
                 # ── 构造 hard_neg ─────────────────────────────────────────
                 hard_neg: Optional[str] = None
-                raw_llm_output: Optional[str] = None   # LLM 原始输出（调试用）
+                raw_llm_output: Optional[str] = None
                 replacement: Optional[str] = None
                 failure_reason: Optional[str] = None
 
                 try:
                     if self.recognizer_type == "LLM" and self.llm_engine is not None:
-                        # LLM 路径：先拿原始输出以便日志记录，再解析
-                        from stage2.constructors import _apply_llm_construction, _parse_llm_output
-                        from stage2.prompts import CONSTRUCTION_SYSTEM_PROMPT, build_construction_prompt
-                        user_prompt = build_construction_prompt(self.method_name, record.pos)
-                        raw_llm_output = self.llm_engine.generate(
-                            system_prompt=CONSTRUCTION_SYSTEM_PROMPT,
-                            user_prompt=user_prompt,
-                        )
+                        from stage2.constructors import _parse_llm_output
+                        raw_llm_output = llm_raw_map.get(record.id, "")
                         raw = _parse_llm_output(raw_llm_output, record.pos)
                     else:
                         raw = apply_method(
@@ -199,7 +231,7 @@ class PipelineRunner:
                     "recognizer": self.recognizer_type,
                     "input": record.pos,
                     "features_found": {k: v for k, v in features.items() if v},
-                    "raw_llm_output": raw_llm_output,   # LLM 原始生成，用于 debug
+                    "raw_llm_output": raw_llm_output,
                     "output": hard_neg,
                     "replacement": replacement,
                     "success": hard_neg is not None,
