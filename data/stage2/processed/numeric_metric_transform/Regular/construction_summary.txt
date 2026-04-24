@@ -1,7 +1,7 @@
 ========================================
 Method    : numeric_metric_transform
 Recognizer: Regular
-Date      : 2026-04-04 01:24:58
+Date      : 2026-04-09 15:52:54
 ----------------------------------------
 Total     : 1000
 Success   : 16  (1.6%)
@@ -14,5 +14,5 @@ Failure breakdown:
   exception                :    0  (0.0%)
 
 Avg feature count : 0.02
-Processing time   : 192.55s
+Processing time   : 155.03s
 ========================================

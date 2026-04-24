@@ -1,0 +1,18 @@
+========================================
+Method    : scope_degree_scaling
+Recognizer: LLM
+Date      : 2026-04-10 12:19:13
+----------------------------------------
+Total     : 1000
+Success   : 370  (37.0%)
+Failed    : 630  (63.0%)
+
+Failure breakdown:
+  no_feature_found         :  630  (100.0%)
+  output_same_as_input     :    0  (0.0%)
+  empty_output             :    0  (0.0%)
+  exception                :    0  (0.0%)
+
+Avg feature count : 0.00
+Processing time   : 894.78s
+========================================

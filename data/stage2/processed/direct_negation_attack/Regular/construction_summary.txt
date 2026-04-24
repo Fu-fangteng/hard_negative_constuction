@@ -1,18 +1,18 @@
 ========================================
 Method    : direct_negation_attack
 Recognizer: Regular
-Date      : 2026-04-09 18:12:30
+Date      : 2026-04-17 17:56:01
 ----------------------------------------
-Total     : 1000
-Success   : 995  (99.5%)
-Failed    : 5  (0.5%)
+Total     : 274951
+Success   : 248016  (90.2%)
+Failed    : 26935  (9.8%)
 
 Failure breakdown:
-  no_feature_found         :    5  (100.0%)
+  no_feature_found         : 26935  (100.0%)
   output_same_as_input     :    0  (0.0%)
   empty_output             :    0  (0.0%)
   exception                :    0  (0.0%)
 
-Avg feature count : 0.94
-Processing time   : 152.66s
+Avg feature count : 0.96
+Processing time   : 82741.56s
 ========================================

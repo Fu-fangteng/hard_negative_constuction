@@ -1,0 +1,15 @@
+{
+  "method_name": "temporal_causal_inversion",
+  "recognizer_type": "LLM",
+  "total_samples": 1000,
+  "success_count": 587,
+  "success_ratio": 0.587,
+  "avg_feature_count": 0.0,
+  "failure_reasons": {
+    "no_feature_found": 413,
+    "output_same_as_input": 0,
+    "empty_output": 0,
+    "exception": 0
+  },
+  "processing_time_sec": 869.63
+}

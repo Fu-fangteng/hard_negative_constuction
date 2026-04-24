@@ -1,0 +1,29 @@
+======================================================================
+Model Evaluation Summary
+Date      : 20260420_142631
+======================================================================
+
+Models
+----------------------------------------------------------------------
+  base      : all-MiniLM-L6-v2
+  nli       : /hpc2hdd/home/ffu000/representation_learning/hard_neg/models/{}_mpnet-base-nli-for-simcse-triplet/final
+  llm       : /hpc2hdd/home/ffu000/representation_learning/hard_neg/models/20260418_052143_compare/llm/final
+  regular   : /hpc2hdd/home/ffu000/representation_learning/hard_neg/models/20260418_052143_compare/regular/final
+  combined  : /hpc2hdd/home/ffu000/representation_learning/hard_neg/models/20260418_052143_compare/combined/final
+
+MTEB STS Results (Spearman Cosine)
+----------------------------------------------------------------------
+  Task                  base            nli             llm             regular         combined      
+  ----------------------------------------------------------------------------------------------------
+  STSBenchmark                  0.8203          0.8392          0.8317          0.8358          0.8311
+  ----------------------------------------------------------------------------------------------------
+  Average                       0.8203          0.8392          0.8317          0.8358          0.8311
+
+Hard-Neg Dataset Results (TripletEvaluator, n=100)
+----------------------------------------------------------------------
+  Metric                     base            nli             llm             regular         combined      
+  ------------------------------------------------------------
+  Orig Neg Accuracy                  0.8800          0.9800          0.8800          0.9000          0.8900
+  Hard Neg Accuracy                  0.8100          0.8500          0.9100          0.8300          0.8900
+
+======================================================================

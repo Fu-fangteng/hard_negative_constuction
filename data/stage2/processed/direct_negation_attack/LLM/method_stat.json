@@ -1,0 +1,15 @@
+{
+  "method_name": "direct_negation_attack",
+  "recognizer_type": "LLM",
+  "total_samples": 274951,
+  "success_count": 169121,
+  "success_ratio": 0.6151,
+  "avg_feature_count": 1.0,
+  "failure_reasons": {
+    "no_feature_found": 105830,
+    "output_same_as_input": 0,
+    "empty_output": 0,
+    "exception": 0
+  },
+  "processing_time_sec": 7.3
+}

@@ -1,0 +1,18 @@
+========================================
+Method    : entity_pronoun_substitution
+Recognizer: LLM
+Date      : 2026-04-09 20:26:15
+----------------------------------------
+Total     : 1000
+Success   : 354  (35.4%)
+Failed    : 646  (64.6%)
+
+Failure breakdown:
+  no_feature_found         :  646  (100.0%)
+  output_same_as_input     :    0  (0.0%)
+  empty_output             :    0  (0.0%)
+  exception                :    0  (0.0%)
+
+Avg feature count : 0.00
+Processing time   : 802.58s
+========================================

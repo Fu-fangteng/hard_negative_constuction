@@ -1,0 +1,15 @@
+{
+  "method_name": "entity_pronoun_substitution",
+  "recognizer_type": "LLM",
+  "total_samples": 1000,
+  "success_count": 354,
+  "success_ratio": 0.354,
+  "avg_feature_count": 0.0,
+  "failure_reasons": {
+    "no_feature_found": 646,
+    "output_same_as_input": 0,
+    "empty_output": 0,
+    "exception": 0
+  },
+  "processing_time_sec": 802.58
+}

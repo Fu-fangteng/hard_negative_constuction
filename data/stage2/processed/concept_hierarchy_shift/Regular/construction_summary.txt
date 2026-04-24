@@ -1,7 +1,7 @@
 ========================================
 Method    : concept_hierarchy_shift
 Recognizer: Regular
-Date      : 2026-04-04 02:09:25
+Date      : 2026-04-09 20:36:18
 ----------------------------------------
 Total     : 1000
 Success   : 39  (3.9%)
@@ -14,5 +14,5 @@ Failure breakdown:
   exception                :    0  (0.0%)
 
 Avg feature count : 0.58
-Processing time   : 163.97s
+Processing time   : 151.09s
 ========================================

@@ -1,0 +1,18 @@
+========================================
+Method    : temporal_causal_inversion
+Recognizer: LLM
+Date      : 2026-04-10 13:16:16
+----------------------------------------
+Total     : 1000
+Success   : 587  (58.7%)
+Failed    : 413  (41.3%)
+
+Failure breakdown:
+  no_feature_found         :  413  (100.0%)
+  output_same_as_input     :    0  (0.0%)
+  empty_output             :    0  (0.0%)
+  exception                :    0  (0.0%)
+
+Avg feature count : 0.00
+Processing time   : 869.63s
+========================================

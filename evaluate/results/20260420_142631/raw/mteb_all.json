@@ -1,0 +1,17 @@
+{
+  "base": {
+    "STSBenchmark": 0.8203246160625794
+  },
+  "nli": {
+    "STSBenchmark": 0.8392245556915803
+  },
+  "llm": {
+    "STSBenchmark": 0.8317163532164158
+  },
+  "regular": {
+    "STSBenchmark": 0.8357535605418348
+  },
+  "combined": {
+    "STSBenchmark": 0.8310999512704029
+  }
+}

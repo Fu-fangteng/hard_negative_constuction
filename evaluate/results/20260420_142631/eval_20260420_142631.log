@@ -1,0 +1,69 @@
+2026-04-20 14:26:31,833 [INFO] Output: /hpc2hdd/home/ffu000/representation_learning/hard_neg/evaluate/results/20260420_142631
+2026-04-20 14:26:31,834 [INFO] [DEBUG] tasks=STSBenchmark, max_hardneg_samples=100
+2026-04-20 14:26:31,834 [INFO] Models: {'base': 'all-MiniLM-L6-v2', 'nli': '/hpc2hdd/home/ffu000/representation_learning/hard_neg/models/{}_mpnet-base-nli-for-simcse-triplet/final', 'llm': '/hpc2hdd/home/ffu000/representation_learning/hard_neg/models/20260418_052143_compare/llm/final', 'regular': '/hpc2hdd/home/ffu000/representation_learning/hard_neg/models/20260418_052143_compare/regular/final', 'combined': '/hpc2hdd/home/ffu000/representation_learning/hard_neg/models/20260418_052143_compare/combined/final'}
+2026-04-20 14:26:31,834 [INFO] 
+[Part 1] MTEB STS Evaluation
+2026-04-20 14:26:31,834 [INFO] 
+  Model: base
+2026-04-20 14:26:36,810 [INFO]   [MTEB] Loading: all-MiniLM-L6-v2
+2026-04-20 14:26:47,654 [INFO]   [MTEB] Running 1 tasks ...
+2026-04-20 14:26:52,820 [INFO]     STSBenchmark: 0.8203
+2026-04-20 14:26:52,820 [INFO] 
+  Model: nli
+2026-04-20 14:26:52,820 [INFO]   [MTEB] Loading: /hpc2hdd/home/ffu000/representation_learning/hard_neg/models/{}_mpnet-base-nli-for-simcse-triplet/final
+2026-04-20 14:26:52,977 [INFO]   [MTEB] Running 1 tasks ...
+2026-04-20 14:26:56,080 [INFO]     STSBenchmark: 0.8392
+2026-04-20 14:26:56,081 [INFO] 
+  Model: llm
+2026-04-20 14:26:56,081 [INFO]   [MTEB] Loading: /hpc2hdd/home/ffu000/representation_learning/hard_neg/models/20260418_052143_compare/llm/final
+2026-04-20 14:26:56,204 [INFO]   [MTEB] Running 1 tasks ...
+2026-04-20 14:26:59,428 [INFO]     STSBenchmark: 0.8317
+2026-04-20 14:26:59,429 [INFO] 
+  Model: regular
+2026-04-20 14:26:59,429 [INFO]   [MTEB] Loading: /hpc2hdd/home/ffu000/representation_learning/hard_neg/models/20260418_052143_compare/regular/final
+2026-04-20 14:26:59,562 [INFO]   [MTEB] Running 1 tasks ...
+2026-04-20 14:27:03,224 [INFO]     STSBenchmark: 0.8358
+2026-04-20 14:27:03,225 [INFO] 
+  Model: combined
+2026-04-20 14:27:03,225 [INFO]   [MTEB] Loading: /hpc2hdd/home/ffu000/representation_learning/hard_neg/models/20260418_052143_compare/combined/final
+2026-04-20 14:27:03,353 [INFO]   [MTEB] Running 1 tasks ...
+2026-04-20 14:27:06,622 [INFO]     STSBenchmark: 0.8311
+2026-04-20 14:27:06,623 [INFO] 
+[Part 2] Hard-Neg Dataset Evaluation (shared combined dataset)
+2026-04-20 14:27:09,169 [INFO]   Shared eval set: 100 samples (combined)
+2026-04-20 14:27:09,170 [INFO] 
+  Model: base
+2026-04-20 14:27:09,173 [INFO]   [Hard-neg] Loading: all-MiniLM-L6-v2
+2026-04-20 14:27:21,384 [INFO]     orig neg accuracy: 0.8800
+2026-04-20 14:27:21,441 [INFO]     hard neg accuracy: 0.8100
+2026-04-20 14:27:21,441 [INFO] 
+  Model: nli
+2026-04-20 14:27:21,441 [INFO]   [Hard-neg] Loading: /hpc2hdd/home/ffu000/representation_learning/hard_neg/models/{}_mpnet-base-nli-for-simcse-triplet/final
+2026-04-20 14:27:21,828 [INFO]     orig neg accuracy: 0.9800
+2026-04-20 14:27:21,828 [INFO]     hard neg accuracy: 0.8500
+2026-04-20 14:27:21,828 [INFO] 
+  Model: llm
+2026-04-20 14:27:21,828 [INFO]   [Hard-neg] Loading: /hpc2hdd/home/ffu000/representation_learning/hard_neg/models/20260418_052143_compare/llm/final
+2026-04-20 14:27:22,196 [INFO]     orig neg accuracy: 0.8800
+2026-04-20 14:27:22,196 [INFO]     hard neg accuracy: 0.9100
+2026-04-20 14:27:22,196 [INFO] 
+  Model: regular
+2026-04-20 14:27:22,196 [INFO]   [Hard-neg] Loading: /hpc2hdd/home/ffu000/representation_learning/hard_neg/models/20260418_052143_compare/regular/final
+2026-04-20 14:27:22,612 [INFO]     orig neg accuracy: 0.9000
+2026-04-20 14:27:22,613 [INFO]     hard neg accuracy: 0.8300
+2026-04-20 14:27:22,613 [INFO] 
+  Model: combined
+2026-04-20 14:27:22,613 [INFO]   [Hard-neg] Loading: /hpc2hdd/home/ffu000/representation_learning/hard_neg/models/20260418_052143_compare/combined/final
+2026-04-20 14:27:22,997 [INFO]     orig neg accuracy: 0.8900
+2026-04-20 14:27:22,997 [INFO]     hard neg accuracy: 0.8900
+2026-04-20 14:27:22,998 [INFO] 
+[Plots] Generating charts ...
+2026-04-20 14:27:23,239 [INFO]   → mteb_comparison.png
+2026-04-20 14:27:23,570 [INFO]   → hardneg_comparison.png
+2026-04-20 14:27:23,889 [INFO]   → overview.png
+2026-04-20 14:27:23,889 [INFO] 
+[Reports] Writing summary ...
+2026-04-20 14:27:24,933 [INFO]   → summary.txt
+2026-04-20 14:27:24,934 [INFO]   → report.md
+2026-04-20 14:27:24,934 [INFO] 
+✅ Evaluation complete. Results: /hpc2hdd/home/ffu000/representation_learning/hard_neg/evaluate/results/20260420_142631

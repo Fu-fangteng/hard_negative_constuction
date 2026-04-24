@@ -1,7 +1,7 @@
 ========================================
 Method    : role_swap
 Recognizer: Regular
-Date      : 2026-04-04 02:03:57
+Date      : 2026-04-09 23:28:57
 ----------------------------------------
 Total     : 1000
 Success   : 664  (66.4%)
@@ -14,5 +14,5 @@ Failure breakdown:
   exception                :    0  (0.0%)
 
 Avg feature count : 0.74
-Processing time   : 228.27s
+Processing time   : 151.01s
 ========================================

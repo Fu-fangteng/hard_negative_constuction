@@ -1,7 +1,7 @@
 ========================================
 Method    : double_negation_attack
 Recognizer: Regular
-Date      : 2026-04-04 01:56:12
+Date      : 2026-04-09 21:10:48
 ----------------------------------------
 Total     : 1000
 Success   : 81  (8.1%)
@@ -14,5 +14,5 @@ Failure breakdown:
   exception                :    0  (0.0%)
 
 Avg feature count : 0.06
-Processing time   : 236.11s
+Processing time   : 149.07s
 ========================================

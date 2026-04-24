@@ -1,7 +1,7 @@
 ========================================
 Method    : logical_operator_rewrite
 Recognizer: Regular
-Date      : 2026-04-04 02:00:09
+Date      : 2026-04-09 22:00:35
 ----------------------------------------
 Total     : 1000
 Success   : 52  (5.2%)
@@ -14,5 +14,5 @@ Failure breakdown:
   exception                :    0  (0.0%)
 
 Avg feature count : 0.05
-Processing time   : 236.93s
+Processing time   : 1073.85s
 ========================================

@@ -1,0 +1,18 @@
+========================================
+Method    : role_swap
+Recognizer: LLM
+Date      : 2026-04-09 23:41:56
+----------------------------------------
+Total     : 1000
+Success   : 914  (91.4%)
+Failed    : 86  (8.6%)
+
+Failure breakdown:
+  no_feature_found         :   86  (100.0%)
+  output_same_as_input     :    0  (0.0%)
+  empty_output             :    0  (0.0%)
+  exception                :    0  (0.0%)
+
+Avg feature count : 0.00
+Processing time   : 779.89s
+========================================

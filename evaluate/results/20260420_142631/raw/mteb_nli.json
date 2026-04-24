@@ -1,0 +1,24 @@
+{
+  "STSBenchmark": {
+    "score": 0.8392245556915803,
+    "scores": {
+      "test": [
+        {
+          "pearson": 0.8304814700228008,
+          "spearman": 0.8392245556915803,
+          "cosine_pearson": 0.8304814647845373,
+          "cosine_spearman": 0.8392245556915803,
+          "manhattan_pearson": 0.8346350465265701,
+          "manhattan_spearman": 0.8376528246140597,
+          "euclidean_pearson": 0.8361957976627797,
+          "euclidean_spearman": 0.8392246127741878,
+          "main_score": 0.8392245556915803,
+          "hf_subset": "default",
+          "languages": [
+            "eng-Latn"
+          ]
+        }
+      ]
+    }
+  }
+}

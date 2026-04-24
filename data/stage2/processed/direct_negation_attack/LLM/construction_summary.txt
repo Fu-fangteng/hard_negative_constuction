@@ -1,0 +1,18 @@
+========================================
+Method    : direct_negation_attack
+Recognizer: LLM
+Date      : 2026-04-17 00:34:21
+----------------------------------------
+Total     : 274951
+Success   : 169121  (61.5%)
+Failed    : 105830  (38.5%)
+
+Failure breakdown:
+  no_feature_found         : 105830  (100.0%)
+  output_same_as_input     :    0  (0.0%)
+  empty_output             :    0  (0.0%)
+  exception                :    0  (0.0%)
+
+Avg feature count : 1.00
+Processing time   : 7.3s
+========================================
