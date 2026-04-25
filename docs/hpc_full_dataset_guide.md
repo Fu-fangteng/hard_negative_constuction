@@ -1,6 +1,6 @@
-# HPC 全量数据集构造指引
+# HPC 端到端操作指引
 
-从零开始，在远程 HPC 集群上完成 Hard Negative 全量数据集构造的端到端操作手册。
+从零开始在 HPC 集群上完成：数据构建 → 两阶段训练 → MTEB 评估的完整流程手册。
 
 ---
 
@@ -10,14 +10,16 @@
 2. [Step 1：登录节点 — 克隆代码](#2-step-1登录节点--克隆代码)
 3. [Step 2：环境配置](#3-step-2环境配置)
 4. [Step 3：数据准备](#4-step-3数据准备)
-5. [Step 4：预下载 Qwen3 模型](#5-step-4预下载-qwen3-模型)
-6. [Step 5：提交作业](#6-step-5提交作业)
-   - [方案 A — Regular + LLM 一次跑完](#方案-a--regular--llm-一次跑完推荐)
-   - [方案 B — Regular 和 LLM 分开提交](#方案-b--regular-和-llm-分开提交时限受限时使用)
-7. [Step 6：监控作业](#7-step-6监控作业)
-8. [Step 7：验证结果](#8-step-7验证结果)
-9. [Step 8：下载结果到本地](#9-step-8下载结果到本地)
-10. [常见问题排查](#10-常见问题排查)
+5. [Step 4：预下载模型权重](#5-step-4预下载模型权重)
+6. [Step 5：数据构建作业](#6-step-5数据构建作业)
+7. [Step 6：训练作业](#7-step-6训练作业)
+   - [6a — Debug / Test 冒烟验证](#6a--debug--test-冒烟验证)
+   - [6b — 正式全量训练](#6b--正式全量训练)
+   - [6c — 拆分训练（时限受限）](#6c--拆分训练时限受限)
+8. [Step 7：评估作业](#8-step-7评估作业)
+9. [Step 8：监控与进度追踪](#9-step-8监控与进度追踪)
+10. [Step 9：下载结果到本地](#10-step-9下载结果到本地)
+11. [常见报错排查](#11-常见报错排查)
 
 ---
 
@@ -26,101 +28,116 @@
 ```
 登录节点
   │
-  ├── git clone / git pull          ← 拉取最新代码
+  ├── git clone / git pull          ← 拉取最新代码（含最新 commit）
   ├── bash setup_env.sh hard_neg    ← 创建 conda 环境 + 安装依赖
-  ├── 上传原始数据 parquet           ← 数据文件太大不入 git
-  ├── 预下载 Qwen3-1.7B 权重        ← 计算节点无公网，必须提前下
+  ├── 上传 / 下载 原始 parquet      ← 数据文件不入 git
+  ├── 预下载模型权重                ← 计算节点无公网，必须提前下载
+  │     ├── Qwen/Qwen3-1.7B        （LLM 路径构建）
+  │     └── all-MiniLM-L6-v2       （训练基础模型 + MTEB 基准）
   │
-  └── sbatch jobs/run_*.sh          ← 提交到 SLURM 队列
+  └── SLURM 作业
         │
-        └── 计算节点
-              ├── Regular 路径（纯规则，CPU 即可）  ~8h / 275K 条
-              └── LLM 路径（Qwen3 批推理，需 GPU）  ~5h（A100）
+        ├── [构建] run_construct.sh   ~5-24h（含 Regular + LLM）
+        │
+        ├── [训练] run_train_test.sh  ~30min  ← 先跑这个验证流程
+        ├── [训练] run_train_full.sh  ~6-8h A100
+        │
+        └── [评估] run_eval.sh        ~1-2h per model
 ```
 
-**预期产出**（274,951 条原始数据）：
+**实验设计（训练阶段）**
 
-| 路径 | 成功样本 | 时间（A100 80G） | 时间（V100 16G） |
-|---|---|---|---|
-| Regular | ~247,000 条（89.8%） | ~8h | ~8h（无 GPU 需求） |
-| LLM | ~170,000 条（61.7%） | ~5h | ~19h |
+| 实验组 | 数据来源 | Phase 1 模型 | Phase 2 模型（×4 Loss） |
+|--------|---------|-------------|------------------------|
+| `llm`      | LLM 路径构建数据    | 1 个 checkpoint | 4 个模型 |
+| `regular`  | Regular 路径构建数据 | 1 个 checkpoint | 4 个模型 |
+| `combined` | LLM + Regular 合并  | 1 个 checkpoint | 4 个模型 |
+
+Phase 2 的 4 种 Loss：`triplet_cascade`、`batch_hard`、`batch_semi_hard`、`batch_hard_soft_margin`
+
+每种 Loss 从**同一 Phase 1 checkpoint** 独立加载，保证对比公平。
+
+**预期输出（models/{RUN_ID}_compare/）**：
+
+```
+models/{RUN_ID}_compare/
+├── logs/                          ← 全局日志 + 汇总 summary_all.json
+├── filtered_data/                 ← T/T* 过滤结果（3 个实验各一个 JSON）
+├── llm/
+│   ├── phase1/final/              ← Phase 1 checkpoint
+│   ├── phase2_triplet_cascade/final/
+│   ├── phase2_batch_hard/final/
+│   ├── phase2_batch_semi_hard/final/
+│   └── phase2_batch_hard_soft_margin/final/
+├── regular/   （同上结构）
+└── combined/  （同上结构）
+```
 
 ---
 
 ## 2. Step 1：登录节点 — 克隆代码
 
 ```bash
-# SSH 登录集群登录节点
 ssh your_username@your_hpc_host
-
-# 进入你的工作目录（替换为实际路径）
 cd /path/to/your/workspace
 
 # 首次克隆
 git clone https://github.com/Fu-fangteng/hard_negative_constuction.git hard_neg
 cd hard_neg
 
-# 如果已有旧版本，拉取最新代码
+# 已有旧版本则拉取最新
 # cd hard_neg && git pull origin main
 ```
 
-确认代码是最新的：
+确认当前是最新提交：
 
 ```bash
-git log --oneline -5
-# 应能看到最新提交，包含 "feat: batch LLM inference" 等
+git log --oneline -3
+# 应能看到：da47b4f feat(train): implement phase2 training with T/T* hard-neg filter
 ```
 
 ---
 
 ## 3. Step 2：环境配置
 
-项目提供了一键配置脚本 `setup_env.sh`，自动完成以下操作：
-- 创建 `hard_neg` conda 环境（Python 3.10）
-- 安装 PyTorch（自动匹配 CUDA 版本）
-- 安装全部依赖（transformers、spaCy 等）
-- 下载 spaCy 英文模型 `en_core_web_sm`
-
 ```bash
-# 在登录节点执行（需要 conda 已激活）
+# 在登录节点执行
 bash setup_env.sh hard_neg
-
-# 激活环境
 conda activate hard_neg
 ```
 
-**手动验证环境是否正常**：
+**验证环境**（关键依赖版本检查）：
 
 ```bash
 python - <<'EOF'
-import torch, transformers, spacy, pandas, pyarrow
-print(f"torch        : {torch.__version__}")
-print(f"CUDA 可用    : {torch.cuda.is_available()}")
-print(f"transformers : {transformers.__version__}")
-print(f"spacy        : {spacy.__version__}")
-print(f"pandas       : {pandas.__version__}")
+import torch, transformers, spacy, sentence_transformers, mteb, matplotlib
+print(f"torch               : {torch.__version__}")
+print(f"CUDA available      : {torch.cuda.is_available()}")
+print(f"transformers        : {transformers.__version__}")
+print(f"sentence-transformers: {sentence_transformers.__version__}")
+print(f"mteb                : {mteb.__version__}")
+print(f"matplotlib          : {matplotlib.__version__}")
 nlp = spacy.load("en_core_web_sm")
-print("en_core_web_sm : OK")
+print("en_core_web_sm      : OK")
 EOF
 ```
 
-期望输出示例：
-```
-torch        : 2.x.x
-CUDA 可用    : True
-transformers : 4.x.x
-spacy        : 3.x.x
-pandas       : 2.x.x
-en_core_web_sm : OK
-```
+期望：
+- `sentence-transformers >= 5.1.2`（必须，低版本缺少 BatchHardTripletLoss 等 API）
+- `mteb >= 1.39.7`
+- `CUDA available : True`（训练必须，构建 LLM 路径必须）
 
-> 如果 `CUDA 可用 : False`，检查 `module load cuda` 或联系管理员确认 GPU 驱动。
+如果版本不满足，手动升级：
+
+```bash
+pip install "sentence-transformers>=5.1.2" "mteb>=1.39.7"
+```
 
 ---
 
 ## 4. Step 3：数据准备
 
-原始数据文件不入 git（体积大），需手动上传。
+原始数据文件不入 git，需手动上传或在集群下载。
 
 ### 方式一：从本地 scp 上传
 
@@ -130,13 +147,11 @@ scp /path/to/hard_neg/data/raw/train-00000-of-00001.parquet \
     your_username@your_hpc_host:/path/to/workspace/hard_neg/data/raw/
 ```
 
-### 方式二：集群上直接下载（如有公网）
+### 方式二：集群登录节点直接下载（若有公网）
 
 ```bash
-# 在登录节点执行
 mkdir -p data/raw
 conda activate hard_neg
-
 python - <<'EOF'
 from datasets import load_dataset
 ds = load_dataset("sentence-transformers/nli-for-simcse", split="train")
@@ -145,85 +160,82 @@ print(f"Downloaded {len(ds)} rows")
 EOF
 ```
 
-验证数据文件存在：
+验证：
 
 ```bash
-ls -lh data/raw/train-00000-of-00001.parquet
-# 期望：约 60-80MB
-
 python - <<'EOF'
 import pandas as pd
 df = pd.read_parquet("data/raw/train-00000-of-00001.parquet")
-print(f"总行数   : {len(df):,}")
-print(f"列名     : {df.columns.tolist()}")
-print(df.head(2).to_string())
+print(f"总行数: {len(df):,}")       # 期望 274,951
+print(f"列名  : {df.columns.tolist()}")  # ['anchor', 'positive', 'negative']
 EOF
-# 期望输出：总行数 : 274,951，列名 ['anchor', 'positive', 'negative']
 ```
+
+如果**已经有构建好的数据**（`data/stage2/processed/` 已存在），可跳过数据构建步骤（Step 5），直接进入 Step 6 训练。
 
 ---
 
-## 5. Step 4：预下载 Qwen3 模型
+## 5. Step 4：预下载模型权重
 
-> **仅 LLM 路径需要此步骤。** 如果只跑 Regular，可跳过。
-
-计算节点通常无法访问互联网，必须在登录节点提前下载并缓存模型权重。
+计算节点通常无法访问互联网，**必须在登录节点提前下载**所有需要的模型。
 
 ```bash
 conda activate hard_neg
-
-# 建议将缓存放在共享存储，避免每人重复下载
-export HF_HOME=/path/to/shared/storage/.cache/huggingface
-# 例如：export HF_HOME=/scratch/shared/.cache/huggingface
-
-python - <<'EOF'
-from transformers import AutoTokenizer, AutoModelForCausalLM
-model_id = "Qwen/Qwen3-1.7B"
-
-print(f"下载 tokenizer: {model_id} ...")
-AutoTokenizer.from_pretrained(model_id)
-
-print(f"下载模型权重: {model_id} ...")
-AutoModelForCausalLM.from_pretrained(model_id, torch_dtype="auto")
-
-print("下载完成，已缓存至:", __import__('os').environ.get('HF_HOME', '~/.cache/huggingface'))
-EOF
+export HF_HOME=/path/to/shared/.cache/huggingface   # ← 修改为共享存储路径
 ```
 
-验证模型可以加载（在登录节点，不需要 GPU）：
+### 4a — all-MiniLM-L6-v2（训练基础模型，必须下载）
 
 ```bash
 python - <<'EOF'
+from sentence_transformers import SentenceTransformer
+model = SentenceTransformer("all-MiniLM-L6-v2")
+print("all-MiniLM-L6-v2 cached OK, embedding dim:", model.get_sentence_embedding_dimension())
+EOF
+```
+
+### 4b — Qwen3-1.7B（LLM 路径数据构建，仅需 LLM 路径时下载）
+
+```bash
+python - <<'EOF'
+from transformers import AutoTokenizer, AutoModelForCausalLM
+AutoTokenizer.from_pretrained("Qwen/Qwen3-1.7B")
+AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-1.7B", torch_dtype="auto")
+print("Qwen3-1.7B cached OK")
+EOF
+```
+
+验证两个模型都可以无网络加载：
+
+```bash
+python - <<'EOF'
+import os; os.environ["TRANSFORMERS_OFFLINE"] = "1"
+from sentence_transformers import SentenceTransformer
 from transformers import AutoTokenizer
-tok = AutoTokenizer.from_pretrained("Qwen/Qwen3-1.7B")
-print(f"词表大小: {tok.vocab_size}")
-print("模型缓存验证 OK")
+m = SentenceTransformer("all-MiniLM-L6-v2")
+t = AutoTokenizer.from_pretrained("Qwen/Qwen3-1.7B")
+print("Offline load OK")
 EOF
 ```
 
 ---
 
-## 6. Step 5：提交作业
+## 6. Step 5：数据构建作业
 
-先创建作业脚本目录和日志目录：
+> **如果已有 `data/stage2/processed/` 构建结果，可完全跳过此步骤。**
+
+创建作业目录：
 
 ```bash
-cd /path/to/workspace/hard_neg
 mkdir -p jobs logs
 ```
 
----
-
-### 方案 A — Regular + LLM 一次跑完（推荐）
-
-适合：单次作业时限 ≥ 24h、有 GPU 节点。
-
-**创建作业脚本**：
+### 方案 A — Regular + LLM 一次跑完
 
 ```bash
-cat > jobs/run_full.sh << 'JOBEOF'
+cat > jobs/run_construct.sh << 'JOBEOF'
 #!/bin/bash
-#SBATCH --job-name=hard_neg_full
+#SBATCH --job-name=hard_neg_construct
 #SBATCH --partition=gpu              # ← 修改为你的 GPU 分区名
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -231,39 +243,29 @@ cat > jobs/run_full.sh << 'JOBEOF'
 #SBATCH --gres=gpu:1
 #SBATCH --mem=64G
 #SBATCH --time=24:00:00
-#SBATCH --output=logs/full_%j.out
-#SBATCH --error=logs/full_%j.err
+#SBATCH --output=logs/construct_%j.out
+#SBATCH --error=logs/construct_%j.err
 
 set -e
 
-# ── 路径配置（根据实际修改）────────────────────────────────
 WORKDIR=/path/to/workspace/hard_neg        # ← 修改
 HF_CACHE=/path/to/shared/.cache/huggingface  # ← 修改
 CONDA_ENV=hard_neg
 
-# ── 环境初始化 ────────────────────────────────────────────
 cd "$WORKDIR"
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate "$CONDA_ENV"
 export HF_HOME="$HF_CACHE"
+export TRANSFORMERS_OFFLINE=1
 
-echo "=========================================="
-echo "作业 ID   : $SLURM_JOB_ID"
-echo "节点      : $(hostname)"
-echo "开始时间  : $(date '+%Y-%m-%d %H:%M:%S')"
-echo "GPU       : $(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader)"
-echo "=========================================="
-
-# ── 自动根据显存选 batch_size ─────────────────────────────
+echo "Job: $SLURM_JOB_ID  Node: $(hostname)  Start: $(date)"
 GPU_MEM=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -1)
 if   [ "$GPU_MEM" -ge 70000 ]; then BATCH=16
 elif [ "$GPU_MEM" -ge 30000 ]; then BATCH=12
 elif [ "$GPU_MEM" -ge 20000 ]; then BATCH=8
-else BATCH=6
-fi
-echo "显存: ${GPU_MEM}MiB  → llm_batch_size=${BATCH}"
+else BATCH=6; fi
+echo "GPU mem: ${GPU_MEM}MiB  → llm_batch_size=${BATCH}"
 
-# ── 运行流水线 ────────────────────────────────────────────
 python stage2/run_stage2.py \
     --input_path     data/raw/train-00000-of-00001.parquet \
     --output_base    data/stage2 \
@@ -272,77 +274,37 @@ python stage2/run_stage2.py \
     --llm_model      Qwen/Qwen3-1.7B \
     --llm_batch_size "$BATCH"
 
-echo "=========================================="
-echo "结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
-echo "=========================================="
+echo "Done: $(date)"
 JOBEOF
-```
 
-**提交作业**：
-
-```bash
-sbatch jobs/run_full.sh
-
-# 输出示例：Submitted batch job 12345678
+sbatch jobs/run_construct.sh
 ```
 
 ---
 
-### 方案 B — Regular 和 LLM 分开提交（时限受限时使用）
+## 7. Step 6：训练作业
 
-#### B-1：Regular 路径（无 GPU，~8h）
+训练作业分三个层级：debug（冒烟）→ test（流程验证）→ full（正式）。
+
+**先在 test 模式下确认整个流程没有错误，再提交正式作业。**
+
+### 6a — Debug / Test 冒烟验证
+
+先提交一个 test 作业，验证代码在真实 GPU 环境下跑通：
 
 ```bash
-cat > jobs/run_regular.sh << 'JOBEOF'
+cat > jobs/run_train_test.sh << 'JOBEOF'
 #!/bin/bash
-#SBATCH --job-name=hard_neg_regular
-#SBATCH --partition=cpu              # ← CPU 分区即可
+#SBATCH --job-name=hard_neg_train_test
+#SBATCH --partition=gpu
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=16G
-#SBATCH --time=12:00:00
-#SBATCH --output=logs/regular_%j.out
-#SBATCH --error=logs/regular_%j.err
-
-set -e
-
-WORKDIR=/path/to/workspace/hard_neg   # ← 修改
-CONDA_ENV=hard_neg
-
-cd "$WORKDIR"
-source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate "$CONDA_ENV"
-
-echo "开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
-
-python stage2/run_stage2.py \
-    --input_path  data/raw/train-00000-of-00001.parquet \
-    --output_base data/stage2 \
-    --methods     direct_negation_attack \
-    --recognizer  regular
-
-echo "结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
-JOBEOF
-
-sbatch jobs/run_regular.sh
-```
-
-#### B-2：LLM 路径（需要 GPU，A100 ~5h / V100 ~19h）
-
-```bash
-cat > jobs/run_llm.sh << 'JOBEOF'
-#!/bin/bash
-#SBATCH --job-name=hard_neg_llm
-#SBATCH --partition=gpu              # ← 修改为你的 GPU 分区名
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:1
-#SBATCH --mem=48G
-#SBATCH --time=24:00:00              # V100 需要更长时间
-#SBATCH --output=logs/llm_%j.out
-#SBATCH --error=logs/llm_%j.err
+#SBATCH --mem=32G
+#SBATCH --time=01:00:00
+#SBATCH --output=logs/train_test_%j.out
+#SBATCH --error=logs/train_test_%j.err
 
 set -e
 
@@ -354,216 +316,370 @@ cd "$WORKDIR"
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate "$CONDA_ENV"
 export HF_HOME="$HF_CACHE"
+export TRANSFORMERS_OFFLINE=1
 
-echo "节点: $(hostname)  GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader)"
-echo "开始时间: $(date '+%Y-%m-%d %H:%M:%S')"
+echo "=== TRAIN TEST MODE ==="
+echo "Job: $SLURM_JOB_ID  Node: $(hostname)  GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader)"
+echo "Start: $(date)"
 
-GPU_MEM=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -1)
-if   [ "$GPU_MEM" -ge 70000 ]; then BATCH=16
-elif [ "$GPU_MEM" -ge 30000 ]; then BATCH=12
-elif [ "$GPU_MEM" -ge 20000 ]; then BATCH=8
-else BATCH=6
-fi
-echo "显存: ${GPU_MEM}MiB  → llm_batch_size=${BATCH}"
+python train_hard_neg.py --test
 
-python stage2/run_stage2.py \
-    --input_path     data/raw/train-00000-of-00001.parquet \
-    --output_base    data/stage2 \
-    --methods        direct_negation_attack \
-    --recognizer     llm \
-    --llm_model      Qwen/Qwen3-1.7B \
-    --llm_batch_size "$BATCH"
-
-echo "结束时间: $(date '+%Y-%m-%d %H:%M:%S')"
+echo "=== TEST DONE: $(date) ==="
+echo "Check models/ directory for output"
+ls -lh models/ | tail -5
 JOBEOF
 
-sbatch jobs/run_llm.sh
+sbatch jobs/run_train_test.sh
 ```
 
-#### B-3：两个作业都完成后，合并生成 difference.md 和 final_dataset
+test 模式每组数据截断到 500 条，整个流程约 **20–30 分钟**。
+输出目录：`models/{RUN_ID}_test_compare/`
+
+完成后检查日志末尾的汇总表：
 
 ```bash
-conda activate hard_neg
-python - << 'EOF'
-import json, sys
-from pathlib import Path
+tail -30 logs/train_test_<job_id>.out
+# 应能看到：
+# Exp          Loss                         Train  P1-Orig  P2-Orig   ΔOrig  P1-Hard  P2-Hard   ΔHard
+# llm          triplet_cascade               ...
+# llm          batch_hard                    ...
+# ...
+```
 
-sys.path.insert(0, ".")
-from stage2.analyzer import aggregate_final_dataset, generate_difference_report
-from stage2.builder import RunResult
+### 6b — 正式全量训练
 
-base = Path("data/stage2/processed/direct_negation_attack")
+确认 test 跑通后，提交正式作业：
 
-def load_result(recognizer):
-    d = base / recognizer
-    records = json.loads((d / "constructed_data.json").read_text())
-    stats   = json.loads((d / "method_stat.json").read_text())
-    feat    = {r["id"]: 0 for r in records}
-    return RunResult(
-        method_name="direct_negation_attack",
-        recognizer_type=recognizer,
-        records=records,
-        stats=stats,
-        feature_counts=feat,
-    )
+```bash
+cat > jobs/run_train_full.sh << 'JOBEOF'
+#!/bin/bash
+#SBATCH --job-name=hard_neg_train
+#SBATCH --partition=gpu
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --gres=gpu:1
+#SBATCH --mem=64G
+#SBATCH --time=16:00:00
+#SBATCH --output=logs/train_%j.out
+#SBATCH --error=logs/train_%j.err
 
-reg = load_result("Regular")
-llm = load_result("LLM")
-all_results = {"direct_negation_attack": {"Regular": reg, "LLM": llm}}
+set -e
 
-diff = generate_difference_report("direct_negation_attack", reg, llm)
-(base / "difference.md").write_text(diff, encoding="utf-8")
-print("✓ difference.md 写入完成")
+WORKDIR=/path/to/workspace/hard_neg        # ← 修改
+HF_CACHE=/path/to/shared/.cache/huggingface  # ← 修改
+CONDA_ENV=hard_neg
 
-final_rows = aggregate_final_dataset(all_results)
-out = Path("data/stage2/processed/final_dataset.jsonl")
-with out.open("w") as f:
-    for row in final_rows:
-        f.write(json.dumps(row, ensure_ascii=False) + "\n")
-print(f"✓ final_dataset.jsonl: {len(final_rows):,} 条")
+cd "$WORKDIR"
+source "$(conda info --base)/etc/profile.d/conda.sh"
+conda activate "$CONDA_ENV"
+export HF_HOME="$HF_CACHE"
+export TRANSFORMERS_OFFLINE=1
+
+echo "=== FULL TRAINING ==="
+echo "Job: $SLURM_JOB_ID"
+echo "Node: $(hostname)"
+echo "GPU: $(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader)"
+echo "Start: $(date)"
+nvidia-smi
+
+python train_hard_neg.py
+
+echo "=== TRAINING DONE: $(date) ==="
+echo ""
+echo "=== Output directory ==="
+RUN_DIR=$(ls -td models/*_compare | grep -v debug | grep -v test | head -1)
+echo "$RUN_DIR"
+ls -lh "$RUN_DIR/"
+echo ""
+echo "=== Summary ==="
+cat "$RUN_DIR/logs/summary_all_"*.json 2>/dev/null | python -m json.tool | head -60
+JOBEOF
+
+sbatch jobs/run_train_full.sh
+```
+
+**时间估算（单张 A100 80G）**：
+
+| 阶段 | 每实验耗时 | 3 实验合计 |
+|------|-----------|-----------|
+| Phase 1 (llm / regular ≈200K) | ~25 min | ~50 min |
+| Phase 1 (combined ≈400K) | ~45 min | — |
+| T/T* Filter（compute embeddings） | ~5 min | ~15 min |
+| Phase 2 × 4 losses（各≈100K, 3 epoch） | ~60 min | ~3h |
+| **合计** | — | **~5–7h** |
+
+> 建议申请 `--time=16:00:00`，留足 buffer。
+
+### 6c — 拆分训练（时限受限）
+
+如果集群单次作业时限 < 8h，可以只运行 **combined** 实验（包含所有数据，结果最全面）。
+
+修改 `train_hard_neg.py` 中的 `DATASETS` 字典来单独运行某个实验（临时改法，不需要永久修改）：
+
+```bash
+# 用 sed 临时只跑 combined 实验（在作业脚本中）
+python - <<'EOF'
+import re
+code = open("train_hard_neg.py").read()
+# 只保留 combined 实验
+new_datasets = '''DATASETS: dict[str, list[str]] = {
+    "combined": [
+        "data/stage2/processed/direct_negation_attack/LLM/constructed_data.json",
+        "data/stage2/processed/direct_negation_attack/Regular/constructed_data.json",
+    ],
+}
+'''
+code = re.sub(r'DATASETS:.*?^}', new_datasets, code, flags=re.DOTALL | re.MULTILINE)
+open("train_hard_neg_combined_only.py", "w").write(code)
+print("Written train_hard_neg_combined_only.py")
 EOF
+
+python train_hard_neg_combined_only.py
+```
+
+或者提交三个独立作业（各只跑一个实验），每个作业约 2h。
+
+---
+
+## 8. Step 7：评估作业
+
+### 7a — 复现 Baseline（首次必跑）
+
+先生成 `baseline_reference.json`，确认评估管道与 MTEB 排行榜对齐：
+
+```bash
+cat > jobs/run_verify_baseline.sh << 'JOBEOF'
+#!/bin/bash
+#SBATCH --job-name=verify_baseline
+#SBATCH --partition=gpu
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --gres=gpu:1
+#SBATCH --mem=32G
+#SBATCH --time=02:00:00
+#SBATCH --output=logs/verify_baseline_%j.out
+#SBATCH --error=logs/verify_baseline_%j.err
+
+set -e
+
+WORKDIR=/path/to/workspace/hard_neg
+HF_CACHE=/path/to/shared/.cache/huggingface
+
+cd "$WORKDIR"
+source "$(conda info --base)/etc/profile.d/conda.sh"
+conda activate hard_neg
+export HF_HOME="$HF_CACHE"
+export TRANSFORMERS_OFFLINE=1
+
+echo "Start: $(date)"
+python evaluate/verify_baseline.py --generate
+echo "Done: $(date)"
+echo "Reference saved to evaluate/baseline_reference.json"
+cat evaluate/baseline_reference.json
+JOBEOF
+
+sbatch jobs/run_verify_baseline.sh
+```
+
+成功后 `evaluate/baseline_reference.json` 会存储 all-MiniLM-L6-v2 在 10 个 STS 任务上的参考分数。
+
+### 7b — 对比评估训练后模型
+
+训练结束后，对你关心的模型（例如 `combined/phase2_triplet_cascade/final`）运行对比评估：
+
+```bash
+cat > jobs/run_eval.sh << 'JOBEOF'
+#!/bin/bash
+#SBATCH --job-name=hard_neg_eval
+#SBATCH --partition=gpu
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --gres=gpu:1
+#SBATCH --mem=32G
+#SBATCH --time=04:00:00
+#SBATCH --output=logs/eval_%j.out
+#SBATCH --error=logs/eval_%j.err
+
+set -e
+
+WORKDIR=/path/to/workspace/hard_neg
+HF_CACHE=/path/to/shared/.cache/huggingface
+
+cd "$WORKDIR"
+source "$(conda info --base)/etc/profile.d/conda.sh"
+conda activate hard_neg
+export HF_HOME="$HF_CACHE"
+export TRANSFORMERS_OFFLINE=1
+
+echo "Start: $(date)"
+
+# ── 修改这里：指定你要评估的模型路径 ─────────────────────
+# 从 models/ 目录找到最新的训练输出
+RUN_DIR=$(ls -td models/*_compare | grep -v debug | grep -v test | head -1)
+echo "Evaluating run: $RUN_DIR"
+
+# 评估所有 Phase 2 最终模型，与 baseline 对比
+for exp in llm regular combined; do
+    for loss in triplet_cascade batch_hard batch_semi_hard batch_hard_soft_margin; do
+        MODEL_PATH="$RUN_DIR/$exp/phase2_$loss/final"
+        if [ -d "$MODEL_PATH" ]; then
+            echo ""
+            echo "=== $exp / $loss ==="
+            python evaluate/verify_baseline.py --check --model "$MODEL_PATH"
+        fi
+    done
+done
+
+echo ""
+echo "Done: $(date)"
+JOBEOF
+
+sbatch jobs/run_eval.sh
+```
+
+**每个模型评估约 30–45 分钟**（10 个 MTEB STS 任务），12 个模型共需 ~6–9h。
+建议先只评估你最关心的模型，用 `--model` 直接指定路径。
+
+### 7c — 手动评估单个模型（推荐先用这个）
+
+```bash
+# 在登录节点交互或提交短作业
+MODEL="models/<RUN_ID>_compare/combined/phase2_triplet_cascade/final"
+python evaluate/verify_baseline.py --check --model "$MODEL"
 ```
 
 ---
 
-## 7. Step 6：监控作业
+## 9. Step 8：监控与进度追踪
 
-### 查看队列状态
+### 查看队列
 
 ```bash
-squeue -u $USER                        # 查看当前用户全部作业
-squeue -j <job_id>                     # 查看指定作业
-squeue -u $USER --format="%.10i %.20j %.8T %.10M %.6D %R"  # 详细格式
+squeue -u $USER --format="%.10i %.25j %.8T %.10M %R"
 ```
 
-状态说明：`PD`=排队中  `R`=运行中  `CG`=即将完成  `F`=失败
-
-### 实时查看日志
+### 实时跟踪训练日志
 
 ```bash
-# 持续刷新日志尾部
-tail -f logs/full_<job_id>.out
+# 查看作业输出（最新 50 行，持续刷新）
+tail -f logs/train_<job_id>.out
 
-# 每 30 秒刷新一次（不占终端）
-watch -n 30 "tail -20 logs/full_<job_id>.out"
+# 不占用终端的后台监控
+watch -n 30 "tail -20 logs/train_<job_id>.out"
 ```
 
-### 查看运行进度
+### 查看当前训练到哪个阶段
 
 ```bash
-# Regular 路径：已处理样本数（每条一行日志）
-wc -l data/stage2/processed/direct_negation_attack/Regular/construction_log.jsonl
+# 训练日志存在 models/ 内
+tail -50 models/*_compare/logs/training_*.log 2>/dev/null | grep "\[P[12]\|Filter\|EXPERIMENT\|Phase"
+```
 
-# LLM 路径：查看批处理进度
-grep "batch\|Generating" logs/llm_<job_id>.out | tail -5
+期望看到类似：
+```
+[EXPERIMENT] LLM
+[P1/llm] train=..., test=...
+[Filter/llm] Computing T and T* ...
+[Filter/llm] kept=... (xx%)
+--- Phase 2 / llm / triplet_cascade ---
+--- Phase 2 / llm / batch_hard ---
+...
+[EXPERIMENT] REGULAR
+...
+```
 
-# 查看 GPU 使用情况（需 ssh 到计算节点）
-ssh <compute_node_name>
-nvidia-smi -l 2     # 每 2 秒刷新
+### 查看汇总结果（训练完成后）
+
+```bash
+RUN_DIR=$(ls -td models/*_compare | grep -v debug | grep -v test | head -1)
+python - <<EOF
+import json
+data = json.load(open("$RUN_DIR/logs/summary_all_".__add__(
+    __import__('os').listdir("$RUN_DIR/logs/")[0].split("summary_all_")[-1])
+    if any("summary_all" in f for f in __import__('os').listdir("$RUN_DIR/logs/")) else "{}"))
+for s in data:
+    print(f"{s['exp_name']:<12} {s['loss_name']:<32} train={s['train_size']:>6} "
+          f"P1-Hard={s['p1_hard']:.4f} P2-Hard={s['p2_hard']:.4f} Δ={s['delta_p2_hard']:+.4f}")
+EOF
+```
+
+或者直接读 JSON：
+
+```bash
+cat models/*_compare/logs/summary_all_*.json | python -m json.tool
+```
+
+### GPU 使用情况
+
+```bash
+# ssh 到计算节点后
+nvidia-smi -l 2    # 每 2 秒刷新
 ```
 
 ### 取消作业
 
 ```bash
-scancel <job_id>         # 取消单个作业
-scancel -u $USER         # 取消该用户所有作业（谨慎！）
+scancel <job_id>
 ```
 
 ---
 
-## 8. Step 7：验证结果
-
-作业完成后，运行以下验证脚本：
-
-```bash
-conda activate hard_neg
-python - << 'EOF'
-import json, random
-from pathlib import Path
-
-base = Path("data/stage2/processed/direct_negation_attack")
-
-print("=" * 50)
-for recognizer in ["Regular", "LLM"]:
-    stat_path = base / recognizer / "method_stat.json"
-    if not stat_path.exists():
-        print(f"[{recognizer}] ❌ method_stat.json 不存在")
-        continue
-    stat = json.loads(stat_path.read_text())
-    ok = stat['success_ratio'] >= (0.85 if recognizer == "Regular" else 0.55)
-    mark = "✓" if ok else "✗ 低于预期"
-    print(f"\n[{recognizer}] {mark}")
-    print(f"  总样本  : {stat['total_samples']:,}")
-    print(f"  成功    : {stat['success_count']:,}  ({stat['success_ratio']*100:.1f}%)")
-    print(f"  处理时间: {stat['processing_time_sec']}s")
-    for reason, count in stat['failure_reasons'].items():
-        if count:
-            print(f"  失败-{reason}: {count:,}")
-
-# final_dataset
-print("\n" + "=" * 50)
-final = Path("data/stage2/processed/final_dataset.jsonl")
-if final.exists():
-    rows = [json.loads(l) for l in final.read_text().splitlines() if l.strip()]
-    ok = len(rows) >= 240000
-    mark = "✓" if ok else "✗ 数量不足"
-    print(f"\n[final_dataset] {mark}")
-    print(f"  总行数: {len(rows):,}")
-    print("\n  抽样展示（3 条）：")
-    random.seed(42)
-    for r in random.sample(rows, min(3, len(rows))):
-        print(f"\n  anchor  : {r['anchor'][:80]}")
-        print(f"  pos     : {r['pos']}")
-        print(f"  hard_neg: {r['hard_neg']}")
-        print(f"  method  : {r['method']} / {r['recognizer']}")
-else:
-    print("❌ final_dataset.jsonl 不存在，请运行合并步骤")
-EOF
-```
-
-**成功标准**：
-
-| 指标 | 期望值 |
-|---|---|
-| Regular 成功率 | ≥ 85% |
-| LLM 成功率 | ≥ 55% |
-| final_dataset 行数 | ≥ 240,000 |
-| hard_neg 中不含 `Not X...` 开头的语法错误 | 0 条 |
-
----
-
-## 9. Step 8：下载结果到本地
+## 10. Step 9：下载结果到本地
 
 ```bash
 # 在本地终端执行
-# 下载最终数据集（最重要）
-scp your_username@your_hpc_host:/path/to/hard_neg/data/stage2/processed/final_dataset.jsonl \
-    ./data/stage2/processed/
 
-# 下载统计文件
-scp -r your_username@your_hpc_host:/path/to/hard_neg/data/stage2/processed/direct_negation_attack/ \
-    ./data/stage2/processed/
+# 下载训练汇总
+scp your_username@your_hpc_host:/path/to/hard_neg/models/<RUN_ID>_compare/logs/summary_all_*.json ./
 
-# 或用 rsync（支持断点续传，推荐）
+# 下载 MTEB 评估结果
+scp -r your_username@your_hpc_host:/path/to/hard_neg/evaluate/results/ ./evaluate/
+
+# 下载 baseline 参考文件
+scp your_username@your_hpc_host:/path/to/hard_neg/evaluate/baseline_reference.json ./evaluate/
+
+# 如果需要下载某个模型权重（体积约 90MB）
 rsync -avz --progress \
-    your_username@your_hpc_host:/path/to/hard_neg/data/stage2/processed/ \
-    ./data/stage2/processed/
+    your_username@your_hpc_host:/path/to/hard_neg/models/<RUN_ID>_compare/combined/phase2_triplet_cascade/final/ \
+    ./models/best_model/
+
+# 下载过滤统计
+scp your_username@your_hpc_host:/path/to/hard_neg/models/<RUN_ID>_compare/filtered_data/filter_stats_*.json ./
 ```
 
 ---
 
-## 10. 常见问题排查
+## 11. 常见报错排查
 
-### CUDA out of memory
+### ImportError: cannot import name 'BatchHardTripletLoss'
 
 ```
-RuntimeError: CUDA out of memory
+ImportError: cannot import name 'BatchHardTripletLoss' from 'sentence_transformers.losses'
 ```
+
+sentence-transformers 版本太低。
 
 ```bash
-# 调小 batch_size，每减半显存需求减半
---llm_batch_size 8   # 默认 16 → 改 8
---llm_batch_size 4   # 极端情况
+pip install "sentence-transformers>=5.1.2"
+```
+
+### CUDA out of memory（训练阶段）
+
+```
+torch.cuda.OutOfMemoryError: CUDA out of memory
+```
+
+修改 `train_hard_neg.py` 中两处 batch_size：
+
+```python
+# Phase 1
+per_device_train_batch_size = 8   # 原 16，减半
+
+# Phase 2
+per_device_train_batch_size = 16  # 原 32，减半
 ```
 
 ### 计算节点无法访问 HuggingFace
@@ -572,15 +688,14 @@ RuntimeError: CUDA out of memory
 OSError: We couldn't connect to 'https://huggingface.co'
 ```
 
-在登录节点提前下载，然后作业脚本中指定本地路径：
+在作业脚本中加入：
 
 ```bash
-# 查找本地缓存路径
-find $HF_HOME -name "config.json" | grep Qwen3
-
-# 在 sbatch 脚本中替换 --llm_model 参数
---llm_model /path/to/shared/.cache/huggingface/hub/models--Qwen--Qwen3-1.7B/snapshots/<hash>/
+export TRANSFORMERS_OFFLINE=1
+export HF_DATASETS_OFFLINE=1
 ```
+
+同时确认已在登录节点提前下载了所有模型（Step 4）。
 
 ### conda activate 在 sbatch 中失效
 
@@ -588,31 +703,36 @@ find $HF_HOME -name "config.json" | grep Qwen3
 CommandNotFoundError: Your shell has not been properly configured to use 'conda activate'
 ```
 
+作业脚本必须使用：
+
 ```bash
-# 在 sbatch 脚本中用完整初始化方式
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate hard_neg
-
-# 而不是直接写
-conda activate hard_neg   # ← sbatch 中此行无效
 ```
 
-### 作业超时，如何确认已完成多少条
+不能直接写 `conda activate hard_neg`（sbatch 非交互式 shell 中无效）。
+
+### 数据文件不存在
+
+```
+AssertionError: 数据文件不存在: data/stage2/processed/direct_negation_attack/LLM/constructed_data.json
+```
+
+训练代码加载三个实验的数据：
+
+```
+data/stage2/processed/direct_negation_attack/LLM/constructed_data.json
+data/stage2/processed/direct_negation_attack/Regular/constructed_data.json
+```
+
+确认这两个文件存在后再提交训练作业：
 
 ```bash
-# 统计 Regular 路径已处理条数
-DONE_REG=$(wc -l < data/stage2/processed/direct_negation_attack/Regular/construction_log.jsonl)
-
-# 统计 LLM 路径已处理条数
-DONE_LLM=$(wc -l < data/stage2/processed/direct_negation_attack/LLM/construction_log.jsonl)
-
-echo "Regular: $DONE_REG / 274951"
-echo "LLM    : $DONE_LLM / 274951"
+ls -lh data/stage2/processed/direct_negation_attack/LLM/constructed_data.json
+ls -lh data/stage2/processed/direct_negation_attack/Regular/constructed_data.json
 ```
 
-> 当前版本不支持断点续传，若超时需重新完整运行。建议在申请时留足 buffer。
-
-### spaCy 模型找不到
+### spaCy 模型找不到（构建阶段）
 
 ```
 OSError: [E050] Can't find model 'en_core_web_sm'
@@ -620,21 +740,48 @@ OSError: [E050] Can't find model 'en_core_web_sm'
 
 ```bash
 conda activate hard_neg
-
-# 有网络时重新下载
 python -m spacy download en_core_web_sm
-
-# 无网络时：在登录节点下载 whl 包后拷贝到计算节点安装
+# 无网络时：
 # pip download en-core-web-sm --no-deps -d /tmp/spacy_pkg/
 # pip install /tmp/spacy_pkg/en_core_web_sm-*.whl
 ```
 
-### 查看作业详细信息（失败原因）
+### 作业超时
 
 ```bash
-# 查看完整的 stderr 输出
-cat logs/full_<job_id>.err
+# 查看已跑到哪个实验 / phase
+grep "EXPERIMENT\|Phase 2\|Filter\|DONE" logs/train_<job_id>.out | tail -20
 
-# 查看作业资源使用情况
-sacct -j <job_id> --format=JobID,JobName,State,ExitCode,Elapsed,MaxRSS,MaxVMSize
+# 查看已有哪些 checkpoint 保存
+find models/*_compare -name "config.json" -path "*/final/*" | sort
+```
+
+超时后可以手动运行还未完成的实验（通过临时修改 `DATASETS` 只保留未完成的实验，见 Step 6c）。
+
+### 查看作业失败原因
+
+```bash
+cat logs/train_<job_id>.err
+sacct -j <job_id> --format=JobID,State,ExitCode,Elapsed,MaxRSS
+```
+
+---
+
+## 快速参考：作业提交顺序
+
+```bash
+# 1. 验证流程正确（先跑）
+sbatch jobs/run_train_test.sh        # ~30min
+
+# 2. 查看 test 结果
+tail -30 logs/train_test_<job_id>.out
+
+# 3. 确认无误后提交正式训练
+sbatch jobs/run_train_full.sh        # ~6-8h
+
+# 4. 训练完成后，先生成 baseline
+sbatch jobs/run_verify_baseline.sh   # ~45min（仅首次需要）
+
+# 5. 评估训练好的模型
+sbatch jobs/run_eval.sh              # 按需调整模型路径
 ```
