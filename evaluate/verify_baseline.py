@@ -101,7 +101,7 @@ def run_sts_eval(
     from sentence_transformers import SentenceTransformer
 
     print(f"  Loading model: {model_path}")
-    model = SentenceTransformer(model_path)
+    model = SentenceTransformer(model_path, trust_remote_code=True)
 
     task_objects = mteb.get_tasks(tasks=tasks, languages=["eng"])
     evaluation   = mteb.MTEB(tasks=task_objects)
@@ -205,13 +205,14 @@ def print_comparison_table(
 def cmd_generate(args):
     """Step 1: 跑 baseline 模型，保存参考分数。"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    model_name = args.model or BASELINE_MODEL
     out_dir = RESULTS_DIR / f"baseline_{timestamp}"
 
-    print(f"\n[GENERATE] Running baseline model: {BASELINE_MODEL}")
+    print(f"\n[GENERATE] Running baseline model: {model_name}")
     print(f"Tasks : {MTEB_STS_V1}")
     print(f"Output: {out_dir}")
 
-    scores = run_sts_eval(BASELINE_MODEL, MTEB_STS_V1, out_dir)
+    scores = run_sts_eval(model_name, MTEB_STS_V1, out_dir)
 
     print_scores_table(scores, f"Baseline: {BASELINE_MODEL}")
 
@@ -232,7 +233,7 @@ def cmd_generate(args):
 
     # 保存参考文件
     reference = {
-        "model":     BASELINE_MODEL,
+        "model":     model_name,
         "timestamp": timestamp,
         "mteb_tasks": MTEB_STS_V1,
         "scores":    scores,
@@ -321,14 +322,14 @@ def parse_args():
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--generate", action="store_true",
-                       help="跑 all-MiniLM-L6-v2 基准，保存参考分数到 baseline_reference.json")
+                       help="跑基准模型（默认 all-MiniLM-L6-v2，可用 --model 覆盖），保存参考分数")
     group.add_argument("--check",    action="store_true",
                        help="对比 --model 指定的模型与已保存的基准")
     group.add_argument("--show",     action="store_true",
                        help="打印已保存的基准分数")
 
     parser.add_argument("--model",     default=None,
-                        help="（--check 时必填）待评测模型路径或 HF model ID")
+                        help="模型路径或 HF model ID；--generate 时覆盖默认基准模型，--check 时必填")
     parser.add_argument("--tolerance", type=float, default=CHECK_TOLERANCE,
                         help=f"与基准的允许误差（默认 {CHECK_TOLERANCE}）")
     parser.add_argument("--tasks", nargs="+", default=MTEB_STS_V1,
