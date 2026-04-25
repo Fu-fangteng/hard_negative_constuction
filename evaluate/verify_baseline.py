@@ -2,62 +2,46 @@
 """
 evaluate/verify_baseline.py
 ============================
-复现 MTEB 排行榜得分并验证评测管道的正确性。
+在 MTEB(eng, v1) 的 10 个 STS 任务上评测任意模型。
+指标：cosine_spearman，与 MTEB 排行榜完全一致。
 
-工作流程
-────────
-Step 1  生成参考分数
-    python evaluate/verify_baseline.py --generate
-    → 在 all-MiniLM-L6-v2（官方预训练权重）上跑完整 10 个 MTEB STS 任务
-    → 结果保存到 evaluate/baseline_reference.json
-
-Step 2  对比验证（检验你自己的模型）
-    python evaluate/verify_baseline.py --check --model /path/to/your/model
-    → 用 --model 指定的模型跑相同 10 个任务
-    → 对比 baseline_reference.json，报告每个任务的分差和通过/失败状态
-
-Step 3  仅打印参考分数
-    python evaluate/verify_baseline.py --show
-
-说明
+用法
 ────
-· 指标：cosine_spearman（= main_score），与 MTEB 排行榜完全一致
-· 任务集：MTEB(eng, v1) STS 10 个任务
-· 容差：默认 ±0.002（浮点精度 + 数据版本差异）
+  # 评测单个模型
+  python evaluate/verify_baseline.py --model Qwen/Qwen3-Embedding-4B
 
-用法示例
-────────
-  # 生成基准分数（首次运行，耗时 ~20min on GPU）
-  python evaluate/verify_baseline.py --generate
+  # 同时评测多个模型并对比
+  python evaluate/verify_baseline.py \
+      --model Qwen/Qwen3-Embedding-4B \
+      --model all-MiniLM-L6-v2 \
+      --model models/my_finetuned/final
 
-  # 验证 NLI 微调模型是否在正确范围内运行，并与基准对比
-  python evaluate/verify_baseline.py --check --model models/nli_run/final
-
-  # 只打印保存的基准
-  python evaluate/verify_baseline.py --show
+输出（evaluate/results/{timestamp}/）
+  scores.json   — 每个模型的 per-task 分数
+  report.md     — Markdown 表格
+  scores.png    — 柱状对比图
+  eval.log      — 完整运行日志
 """
 from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from datetime import datetime
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 常量
-# ─────────────────────────────────────────────────────────────────────────────
-BASELINE_MODEL = "all-MiniLM-L6-v2"
-REFERENCE_FILE = Path(__file__).parent / "baseline_reference.json"
-RESULTS_DIR    = Path(__file__).parent / "results"
+RESULTS_DIR = Path(__file__).parent / "results"
 
-# MTEB(eng, v1) 的 10 个 STS 任务（来源：mteb.get_benchmark('MTEB(eng, v1)')，type='STS'）
-MTEB_STS_V1 = [
+MTEB_STS_TASKS = [
     "BIOSSES",
     "SICK-R",
     "STS12",
@@ -70,19 +54,21 @@ MTEB_STS_V1 = [
     "STSBenchmark",
 ]
 
-# 已知 all-MiniLM-L6-v2 在部分任务上的参考分数（来自 MTEB 论文和已保存结果）
-# 用于自检：生成的基准分数与这些值相差超过 0.005 时给出警告
-_KNOWN_APPROX: dict[str, float] = {
-    "STSBenchmark": 0.8203,   # 已通过本地运行确认
-    "SICK-R":       0.8043,   # MTEB 论文 Table 3
-    "STS12":        0.6716,
-    "STS13":        0.8180,
-    "STS14":        0.6741,
-    "STS15":        0.8241,
-    "STS16":        0.7790,
+# 已知 all-MiniLM-L6-v2 的参考分数，用于自动 sanity check
+_KNOWN_APPROX: dict[str, dict[str, float]] = {
+    "all-MiniLM-L6-v2": {
+        "STSBenchmark": 0.8203,
+        "SICK-R":       0.8043,
+        "STS12":        0.6716,
+        "STS13":        0.8180,
+        "STS14":        0.6741,
+        "STS15":        0.8241,
+        "STS16":        0.7790,
+    },
 }
 
-CHECK_TOLERANCE = 0.002   # 与参考分数的允许误差（相同模型、相同任务）
+COLORS = ["#378ADD", "#1D9E75", "#D94F3D", "#BA7517", "#9B59B6",
+          "#E67E22", "#27AE60", "#2980B9", "#8E44AD", "#C0392B"]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -92,27 +78,24 @@ def run_sts_eval(
     model_path: str,
     tasks: list[str],
     output_dir: Path,
+    logger: logging.Logger,
 ) -> dict[str, float]:
-    """
-    对给定模型跑 MTEB STS 评估，返回 {task_name: cosine_spearman}。
-    输出文件存到 output_dir（MTEB 标准格式，可与官方结果直接对比）。
-    """
+    """对给定模型跑 MTEB STS 评估，返回 {task_name: cosine_spearman}。"""
     import mteb
     from sentence_transformers import SentenceTransformer
 
-    print(f"  Loading model: {model_path}")
+    logger.info(f"  Loading: {model_path}")
     model = SentenceTransformer(model_path, trust_remote_code=True)
 
     task_objects = mteb.get_tasks(tasks=tasks, languages=["eng"])
     evaluation   = mteb.MTEB(tasks=task_objects)
-
     output_dir.mkdir(parents=True, exist_ok=True)
-    print(f"  Running {len(tasks)} MTEB STS tasks ...")
 
+    logger.info(f"  Running {len(tasks)} MTEB STS tasks ...")
     results = evaluation.run(
         model,
         output_folder=str(output_dir),
-        verbosity=1,
+        verbosity=0,
         encode_kwargs={"batch_size": 64},
     )
 
@@ -123,233 +106,228 @@ def run_sts_eval(
         except Exception:
             score = float("nan")
         scores[result.task_name] = score
+        logger.info(f"    {result.task_name:<20} {score:.4f}")
 
+    avg = _avg(scores)
+    logger.info(f"  Average ({len(scores)} tasks): {avg:.4f}")
     return scores
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# 格式化打印
-# ─────────────────────────────────────────────────────────────────────────────
 def _avg(scores: dict[str, float]) -> float:
     vals = [v for v in scores.values() if not np.isnan(v)]
     return float(np.mean(vals)) if vals else float("nan")
 
 
-def print_scores_table(scores: dict[str, float], title: str = ""):
-    if title:
-        print(f"\n{'='*52}")
-        print(f"  {title}")
-        print(f"{'='*52}")
-    print(f"  {'Task':<28} {'cosine_spearman':>16}")
-    print(f"  {'-'*44}")
-    for task in MTEB_STS_V1:
-        v = scores.get(task, float("nan"))
-        mark = ""
-        if task in _KNOWN_APPROX and not np.isnan(v):
-            diff = abs(v - _KNOWN_APPROX[task])
-            mark = "  ✓" if diff <= 0.005 else f"  ⚠ expected≈{_KNOWN_APPROX[task]:.4f}"
-        print(f"  {task:<28} {v:>16.4f}{mark}" if not np.isnan(v)
-              else f"  {task:<28} {'N/A':>16}")
-    avg = _avg(scores)
-    print(f"  {'-'*44}")
-    print(f"  {'Average (10 tasks)':<28} {avg:>16.4f}")
-
-
-def print_comparison_table(
-    target_scores: dict[str, float],
-    ref_scores: dict[str, float],
-    target_label: str,
-    ref_label: str,
-    tolerance: float,
-) -> bool:
-    """打印对比表，返回 True 表示全部任务通过容差检查。"""
-    print(f"\n{'='*72}")
-    print(f"  Comparison: {target_label}  vs  {ref_label}")
-    print(f"  Tolerance: ±{tolerance:.3f}")
-    print(f"{'='*72}")
-    print(f"  {'Task':<28} {ref_label:>12} {target_label:>12} {'Δ':>8}  Status")
-    print(f"  {'-'*66}")
-
-    all_pass = True
-    for task in MTEB_STS_V1:
-        ref = ref_scores.get(task, float("nan"))
-        tgt = target_scores.get(task, float("nan"))
-        if np.isnan(ref) or np.isnan(tgt):
-            status = "⚠  N/A"
-        else:
-            delta = tgt - ref
-            if abs(delta) <= tolerance:
-                status = "✓ PASS"
-            elif delta > tolerance:
-                status = f"↑ BETTER (+{delta:.4f})"
-            else:
-                status = f"↓ WORSE  ({delta:.4f})"
-                all_pass = False
-        ref_str = f"{ref:.4f}" if not np.isnan(ref) else "N/A"
-        tgt_str = f"{tgt:.4f}" if not np.isnan(tgt) else "N/A"
-        d_str   = f"{tgt-ref:+.4f}" if not (np.isnan(ref) or np.isnan(tgt)) else "N/A"
-        print(f"  {task:<28} {ref_str:>12} {tgt_str:>12} {d_str:>8}  {status}")
-
-    print(f"  {'-'*66}")
-    ref_avg = _avg(ref_scores)
-    tgt_avg = _avg(target_scores)
-    d_avg   = tgt_avg - ref_avg
-    avg_status = "↑ BETTER" if d_avg > 0 else ("↓ WORSE" if d_avg < 0 else "= SAME")
-    print(f"  {'Average':<28} {ref_avg:>12.4f} {tgt_avg:>12.4f} {d_avg:>+8.4f}  {avg_status}")
-    return all_pass
+def _short_name(model_path: str) -> str:
+    """取模型路径最后一段作为短标签。"""
+    return Path(model_path).name or model_path
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 三个主命令
+# 打印 & 报告
 # ─────────────────────────────────────────────────────────────────────────────
-def cmd_generate(args):
-    """Step 1: 跑 baseline 模型，保存参考分数。"""
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    model_name = args.model or BASELINE_MODEL
-    out_dir = RESULTS_DIR / f"baseline_{timestamp}"
-
-    print(f"\n[GENERATE] Running baseline model: {model_name}")
-    print(f"Tasks : {MTEB_STS_V1}")
-    print(f"Output: {out_dir}")
-
-    scores = run_sts_eval(model_name, MTEB_STS_V1, out_dir)
-
-    print_scores_table(scores, f"Baseline: {BASELINE_MODEL}")
-
-    # 与已知参考值自检
-    warn_count = 0
-    for task, expected in _KNOWN_APPROX.items():
-        got = scores.get(task, float("nan"))
-        if not np.isnan(got) and abs(got - expected) > 0.005:
-            print(f"  ⚠  WARNING: {task} got {got:.4f}, expected ≈ {expected:.4f} "
-                  f"(diff={got-expected:+.4f}). Check mteb version or model loading.")
-            warn_count += 1
-
-    if warn_count == 0:
-        print("\n  ✓  All known-reference tasks are within tolerance.")
-    else:
-        print(f"\n  ⚠  {warn_count} task(s) deviate from known references — "
-              f"verify mteb version and model path.")
-
-    # 保存参考文件
-    reference = {
-        "model":     model_name,
-        "timestamp": timestamp,
-        "mteb_tasks": MTEB_STS_V1,
-        "scores":    scores,
-        "average":   _avg(scores),
-    }
-    REFERENCE_FILE.write_text(
-        json.dumps(reference, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    print(f"\n  Reference saved → {REFERENCE_FILE}")
+def print_table(
+    all_scores: dict[str, dict[str, float]],
+    model_names: list[str],
+) -> None:
+    col_w = 12
+    header = f"  {'Task':<22}" + "".join(f"  {_short_name(m):>{col_w}}" for m in model_names)
+    sep    = "  " + "-" * (len(header) - 2)
+    print(f"\n{'='*70}")
+    print("  MTEB(eng, v1) STS — cosine_spearman")
+    print(f"{'='*70}")
+    print(header)
+    print(sep)
+    for task in MTEB_STS_TASKS:
+        row = f"  {task:<22}"
+        for m in model_names:
+            v = all_scores.get(m, {}).get(task, float("nan"))
+            row += f"  {v:>{col_w}.4f}" if not np.isnan(v) else f"  {'N/A':>{col_w}}"
+        print(row)
+    print(sep)
+    avg_row = f"  {'Average':<22}"
+    for m in model_names:
+        avg = _avg(all_scores.get(m, {}))
+        avg_row += f"  {avg:>{col_w}.4f}" if not np.isnan(avg) else f"  {'N/A':>{col_w}}"
+    print(avg_row)
+    print(f"{'='*70}\n")
 
 
-def cmd_check(args):
-    """Step 2: 对比目标模型与已保存的 baseline 参考。"""
-    if not REFERENCE_FILE.exists():
-        print(f"ERROR: Reference file not found: {REFERENCE_FILE}")
-        print("Run first:  python evaluate/verify_baseline.py --generate")
-        sys.exit(1)
+def write_report(
+    all_scores: dict[str, dict[str, float]],
+    model_names: list[str],
+    out_path: Path,
+    timestamp: str,
+) -> None:
+    def fmt(v): return f"{v:.4f}" if not np.isnan(v) else "N/A"
 
-    with open(REFERENCE_FILE, encoding="utf-8") as f:
-        reference = json.load(f)
-    ref_scores = reference["scores"]
-    ref_label  = f"baseline ({reference['model']})"
-    print(f"\n[CHECK] Reference: {reference['model']}  ({reference['timestamp']})")
-    print(f"        Reference avg: {reference['average']:.4f}")
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    model_label = Path(args.model).name
-    out_dir = RESULTS_DIR / f"check_{model_label}_{timestamp}"
-
-    print(f"\n[CHECK] Evaluating target model: {args.model}")
-    target_scores = run_sts_eval(args.model, MTEB_STS_V1, out_dir)
-
-    passed = print_comparison_table(
-        target_scores, ref_scores,
-        target_label=model_label,
-        ref_label=ref_label,
-        tolerance=args.tolerance,
-    )
-
-    # 保存对比结果
-    result = {
-        "model":           args.model,
-        "timestamp":       timestamp,
-        "reference_model": reference["model"],
-        "scores":          target_scores,
-        "average":         _avg(target_scores),
-        "delta_avg":       _avg(target_scores) - reference["average"],
-    }
-    out_file = out_dir / "check_result.json"
-    out_file.parent.mkdir(parents=True, exist_ok=True)
-    out_file.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"\n  Results saved → {out_file}")
-
-    if passed:
-        print("\n  ✓  Model evaluation pipeline verified successfully.")
-    else:
-        print("\n  ✗  Some tasks scored below baseline beyond tolerance.")
-        print("     This may indicate a model regression or evaluation error.")
+    cols_header = " | ".join(_short_name(m) for m in model_names)
+    cols_sep    = "|".join("------" for _ in model_names)
+    lines = [
+        "# MTEB STS Evaluation",
+        f"**Date**: {timestamp}  ",
+        "**Benchmark**: MTEB(eng, v1) — 10 STS tasks  ",
+        "**Metric**: `cosine_spearman`",
+        "",
+        "## Models",
+        "",
+    ]
+    for m in model_names:
+        lines.append(f"- `{m}`")
+    lines += [
+        "",
+        "## Results",
+        "",
+        f"| Task | {cols_header} |",
+        f"|------|{cols_sep}|",
+    ]
+    for task in MTEB_STS_TASKS:
+        row = f"| {task} |"
+        for m in model_names:
+            row += " " + fmt(all_scores.get(m, {}).get(task, float("nan"))) + " |"
+        lines.append(row)
+    avg_row = "| **Average** |"
+    for m in model_names:
+        avg_row += " **" + fmt(_avg(all_scores.get(m, {}))) + "** |"
+    lines.append(avg_row)
+    out_path.write_text("\n".join(lines), encoding="utf-8")
 
 
-def cmd_show(args):
-    """Step 3: 打印已保存的参考分数。"""
-    if not REFERENCE_FILE.exists():
-        print(f"No reference file found at: {REFERENCE_FILE}")
-        print("Run: python evaluate/verify_baseline.py --generate")
-        sys.exit(1)
+def plot_scores(
+    all_scores: dict[str, dict[str, float]],
+    model_names: list[str],
+    out_path: Path,
+) -> None:
+    tasks_display = MTEB_STS_TASKS + ["Average"]
+    n_models = len(model_names)
+    n_tasks  = len(tasks_display)
+    x = np.arange(n_tasks)
+    width = min(0.7 / n_models, 0.25)
 
-    with open(REFERENCE_FILE, encoding="utf-8") as f:
-        reference = json.load(f)
+    plt.rcParams.update({
+        "figure.facecolor": "#FFFFFF", "axes.facecolor": "#FFFFFF",
+        "axes.edgecolor": "#888888", "axes.grid": True,
+        "grid.color": "#EBEBEB", "grid.linewidth": 0.8,
+        "font.family": "DejaVu Sans", "font.size": 9,
+    })
+    fig, ax = plt.subplots(figsize=(max(14, n_tasks * 1.2), 5.5))
 
-    print_scores_table(
-        reference["scores"],
-        f"Baseline Reference: {reference['model']}  ({reference['timestamp']})",
-    )
-    print(f"\n  File: {REFERENCE_FILE}")
+    for i, (m, color) in enumerate(zip(model_names, COLORS)):
+        vals = [all_scores.get(m, {}).get(t, float("nan")) for t in MTEB_STS_TASKS]
+        vals_display = vals + [_avg(dict(zip(MTEB_STS_TASKS, vals)))]
+        offset = (i - n_models / 2 + 0.5) * width
+        bars = ax.bar(x + offset, vals_display, width,
+                      label=_short_name(m), color=color, alpha=0.85,
+                      edgecolor="white", linewidth=0.5)
+        for bar, val in zip(bars, vals_display):
+            if not np.isnan(val):
+                ax.text(bar.get_x() + bar.get_width() / 2,
+                        bar.get_height() + 0.003,
+                        f"{val:.3f}",
+                        ha="center", va="bottom", fontsize=6.5, rotation=90)
+
+    # 在 Average 列前画分隔线
+    ax.axvline(x=n_tasks - 1 - 0.5, color="#AAAAAA", linewidth=1.0, linestyle="--")
+    ax.set_xticks(x)
+    ax.set_xticklabels(tasks_display, rotation=20, ha="right")
+    ax.set_ylim(0.0, 1.05)
+    ax.set_ylabel("cosine_spearman")
+    ax.set_title("MTEB(eng, v1) STS Benchmark — cosine_spearman", fontsize=11, fontweight="bold")
+    ax.legend(fontsize=8, loc="lower right")
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CLI
+# 主程序
 # ─────────────────────────────────────────────────────────────────────────────
-def parse_args():
+def main() -> None:
     parser = argparse.ArgumentParser(
-        description="MTEB STS baseline verification tool.",
+        description="Evaluate models on MTEB(eng, v1) STS (cosine_spearman).",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--generate", action="store_true",
-                       help="跑基准模型（默认 all-MiniLM-L6-v2，可用 --model 覆盖），保存参考分数")
-    group.add_argument("--check",    action="store_true",
-                       help="对比 --model 指定的模型与已保存的基准")
-    group.add_argument("--show",     action="store_true",
-                       help="打印已保存的基准分数")
+    parser.add_argument(
+        "--model", dest="models", action="append", required=True, metavar="MODEL",
+        help="模型路径或 HF model ID（可多次指定以对比多个模型）",
+    )
+    args = parser.parse_args()
 
-    parser.add_argument("--model",     default=None,
-                        help="模型路径或 HF model ID；--generate 时覆盖默认基准模型，--check 时必填")
-    parser.add_argument("--tolerance", type=float, default=CHECK_TOLERANCE,
-                        help=f"与基准的允许误差（默认 {CHECK_TOLERANCE}）")
-    parser.add_argument("--tasks", nargs="+", default=MTEB_STS_V1,
-                        help="要评测的 MTEB 任务列表（默认 MTEB(eng,v1) 的 10 个 STS 任务）")
-    return parser.parse_args()
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_dir   = RESULTS_DIR / timestamp
+    out_dir.mkdir(parents=True, exist_ok=True)
 
+    # 日志
+    log_path = out_dir / "eval.log"
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.FileHandler(log_path, encoding="utf-8"),
+            logging.StreamHandler(),
+        ],
+    )
+    logger = logging.getLogger(__name__)
+    logger.info(f"Models  : {args.models}")
+    logger.info(f"Tasks   : {MTEB_STS_TASKS}")
+    logger.info(f"Output  : {out_dir}")
 
-def main():
-    args = parse_args()
+    all_scores: dict[str, dict[str, float]] = {}
 
-    if args.check and not args.model:
-        print("ERROR: --check requires --model <path>")
-        sys.exit(1)
+    for model_path in args.models:
+        logger.info(f"\n{'─'*50}")
+        logger.info(f"Model: {model_path}")
+        raw_dir = out_dir / "raw" / _short_name(model_path)
+        try:
+            scores = run_sts_eval(model_path, MTEB_STS_TASKS, raw_dir, logger)
+            all_scores[model_path] = scores
 
-    if args.generate:
-        cmd_generate(args)
-    elif args.check:
-        cmd_check(args)
-    elif args.show:
-        cmd_show(args)
+            # sanity check for known models
+            base_name = _short_name(model_path)
+            ref = _KNOWN_APPROX.get(base_name) or _KNOWN_APPROX.get(model_path)
+            if ref:
+                warn = [(t, scores[t], ref[t]) for t in ref
+                        if t in scores and not np.isnan(scores[t])
+                        and abs(scores[t] - ref[t]) > 0.005]
+                if warn:
+                    for t, got, exp in warn:
+                        logger.warning(f"  ⚠ {t}: got {got:.4f}, expected ≈ {exp:.4f}")
+                else:
+                    logger.info("  ✓ Known-reference tasks all within ±0.005")
+
+        except Exception as exc:
+            logger.error(f"  FAILED: {exc}", exc_info=True)
+            all_scores[model_path] = {}
+
+    # 打印汇总表
+    print_table(all_scores, args.models)
+
+    # 保存 JSON
+    scores_path = out_dir / "scores.json"
+    scores_path.write_text(
+        json.dumps({"timestamp": timestamp, "models": args.models,
+                    "scores": all_scores,
+                    "averages": {m: _avg(s) for m, s in all_scores.items()}},
+                   ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    logger.info(f"Scores  → {scores_path}")
+
+    # 报告
+    report_path = out_dir / "report.md"
+    write_report(all_scores, args.models, report_path, timestamp)
+    logger.info(f"Report  → {report_path}")
+
+    # 图表
+    plot_path = out_dir / "scores.png"
+    try:
+        plot_scores(all_scores, args.models, plot_path)
+        logger.info(f"Plot    → {plot_path}")
+    except Exception as exc:
+        logger.error(f"Plot failed: {exc}")
+
+    logger.info(f"\nDone. Results: {out_dir}")
 
 
 if __name__ == "__main__":
