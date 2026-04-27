@@ -62,63 +62,84 @@ COLORS = ["#888780", "#378ADD", "#1D9E75", "#D94F3D", "#9B59B6",
 # ─────────────────────────────────────────────────────────────────────────────
 # 核心评估
 # ─────────────────────────────────────────────────────────────────────────────
+def _extract_score(result, logger: logging.Logger) -> float:
+    """从 MTEB TaskResult 中提取 cosine_spearman，主路径失败时走 fallback。"""
+    score = float("nan")
+    try:
+        val = result.get_score()
+        if val is not None:
+            score = float(val)
+    except Exception as exc:
+        logger.warning(f"      get_score() failed: {exc}")
+
+    if np.isnan(score):
+        try:
+            test_s = result.scores.get("test", [])
+            if test_s:
+                cs = test_s[0].get("cosine_spearman")
+                if cs is not None:
+                    score = float(cs)
+                    logger.info(f"      (fallback) cosine_spearman = {score:.4f}")
+        except Exception as exc2:
+            logger.warning(f"      fallback failed: {exc2}")
+    return score
+
+
 def run_mteb_eval(
     model_path: str,
     tasks: list[str],
     raw_dir: Path,
     logger: logging.Logger,
 ) -> dict[str, float]:
-    """对给定模型跑 MTEB STS 评估，返回 {task_name: cosine_spearman}。"""
+    """
+    逐任务运行 MTEB STS 评估，返回 {task_name: cosine_spearman}。
+    遇到 OOM 时自动缩小 batch_size 重试，单任务失败不影响其他任务。
+    """
     import mteb
+    import torch
     from sentence_transformers import SentenceTransformer
 
     logger.info(f"  Loading: {model_path}")
-    model = SentenceTransformer(model_path, trust_remote_code=True)
-
-    task_objects = mteb.get_tasks(tasks=tasks, languages=["eng"])
-    evaluation   = mteb.MTEB(tasks=task_objects)
-
+    model = SentenceTransformer(
+        model_path,
+        trust_remote_code=True,
+        model_kwargs={"torch_dtype": "auto"},   # bf16/fp16，节省显存
+    )
     out_dir = raw_dir / _short_name(model_path)
     out_dir.mkdir(parents=True, exist_ok=True)
-
-    logger.info(f"  Running {len(tasks)} MTEB STS tasks ...")
-    results = evaluation.run(
-        model,
-        output_folder=str(out_dir),
-        verbosity=0,
-        encode_kwargs={"batch_size": 64, "normalize_embeddings": True},
-    )
+    logger.info(f"  Running {len(tasks)} MTEB STS tasks (one by one) ...")
 
     scores: dict[str, float] = {}
-    for result in results:
-        score = float("nan")
-
-        # Primary: result.get_score() → main_score = cosine_spearman
-        try:
-            val = result.get_score()
-            if val is not None:
-                score = float(val)
-        except Exception as exc:
-            logger.warning(f"    get_score() failed for {result.task_name}: {exc}")
-
-        # Fallback: read cosine_spearman directly from result.scores
-        if np.isnan(score):
+    for task_name in tasks:
+        task_score = float("nan")
+        for batch_size in [32, 16, 8, 4]:
             try:
-                test_scores = result.scores.get("test", [])
-                if test_scores:
-                    cs = test_scores[0].get("cosine_spearman")
-                    if cs is not None:
-                        score = float(cs)
-                        logger.info(f"    (fallback) {result.task_name:<20} {score:.4f}")
-            except Exception as exc2:
-                logger.warning(f"    fallback failed for {result.task_name}: {exc2}")
-                logger.debug(f"    result.scores = {getattr(result, 'scores', None)}")
+                task_objs  = mteb.get_tasks(tasks=[task_name], languages=["eng"])
+                evaluation = mteb.MTEB(tasks=task_objs)
+                results    = evaluation.run(
+                    model,
+                    output_folder=str(out_dir),
+                    verbosity=0,
+                    encode_kwargs={"batch_size": batch_size, "normalize_embeddings": True},
+                )
+                task_score = _extract_score(results[0], logger)
+                tag = f"  [batch={batch_size}]" if batch_size < 32 else ""
+                if not np.isnan(task_score):
+                    logger.info(f"    {task_name:<20} {task_score:.4f}{tag}")
+                else:
+                    logger.warning(f"    {task_name:<20} N/A{tag}")
+                break   # 成功，继续下一个任务
 
-        scores[result.task_name] = score
-        if not np.isnan(score):
-            logger.info(f"    {result.task_name:<20} {score:.4f}")
-        else:
-            logger.warning(f"    {result.task_name:<20} N/A  ← check eval.log for details")
+            except torch.cuda.OutOfMemoryError:
+                logger.warning(f"    OOM at batch_size={batch_size} for {task_name}, retrying ...")
+                torch.cuda.empty_cache()
+                if batch_size == 4:
+                    logger.error(f"    {task_name}: OOM at minimum batch_size=4, skipping")
+            except Exception as exc:
+                logger.error(f"    {task_name} failed: {exc}", exc_info=True)
+                break
+
+        scores[task_name] = task_score
 
     logger.info(f"  Average: {_avg(scores):.4f}")
     return scores
