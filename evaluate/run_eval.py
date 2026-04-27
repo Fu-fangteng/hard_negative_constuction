@@ -86,17 +86,39 @@ def run_mteb_eval(
         model,
         output_folder=str(out_dir),
         verbosity=0,
-        encode_kwargs={"batch_size": 64},
+        encode_kwargs={"batch_size": 64, "normalize_embeddings": True},
     )
 
     scores: dict[str, float] = {}
     for result in results:
+        score = float("nan")
+
+        # Primary: result.get_score() → main_score = cosine_spearman
         try:
-            score = float(result.get_score())
-        except Exception:
-            score = float("nan")
+            val = result.get_score()
+            if val is not None:
+                score = float(val)
+        except Exception as exc:
+            logger.warning(f"    get_score() failed for {result.task_name}: {exc}")
+
+        # Fallback: read cosine_spearman directly from result.scores
+        if np.isnan(score):
+            try:
+                test_scores = result.scores.get("test", [])
+                if test_scores:
+                    cs = test_scores[0].get("cosine_spearman")
+                    if cs is not None:
+                        score = float(cs)
+                        logger.info(f"    (fallback) {result.task_name:<20} {score:.4f}")
+            except Exception as exc2:
+                logger.warning(f"    fallback failed for {result.task_name}: {exc2}")
+                logger.debug(f"    result.scores = {getattr(result, 'scores', None)}")
+
         scores[result.task_name] = score
-        logger.info(f"    {result.task_name:<20} {score:.4f}")
+        if not np.isnan(score):
+            logger.info(f"    {result.task_name:<20} {score:.4f}")
+        else:
+            logger.warning(f"    {result.task_name:<20} N/A  ← check eval.log for details")
 
     logger.info(f"  Average: {_avg(scores):.4f}")
     return scores
