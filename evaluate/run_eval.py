@@ -7,10 +7,7 @@ evaluate/run_eval.py
 
 用法
 ────
-  # 评测单个模型
   python evaluate/run_eval.py --model all-MiniLM-L6-v2
-
-  # 同时评测多个模型并生成对比报告
   python evaluate/run_eval.py \
       --model all-MiniLM-L6-v2 \
       --model models/nli_run/final \
@@ -63,7 +60,7 @@ COLORS = ["#888780", "#378ADD", "#1D9E75", "#D94F3D", "#9B59B6",
 # 核心评估
 # ─────────────────────────────────────────────────────────────────────────────
 def _extract_score(result, logger: logging.Logger) -> float:
-    """从 MTEB TaskResult 中提取 cosine_spearman，主路径失败时走 fallback。"""
+    """从 MTEB TaskResult 中提取 cosine_spearman。"""
     score = float("nan")
     try:
         val = result.get_score()
@@ -91,55 +88,34 @@ def run_mteb_eval(
     raw_dir: Path,
     logger: logging.Logger,
 ) -> dict[str, float]:
-    """
-    逐任务运行 MTEB STS 评估，返回 {task_name: cosine_spearman}。
-    遇到 OOM 时自动缩小 batch_size 重试，单任务失败不影响其他任务。
-    """
+    """用官方 mteb.get_model() 加载模型并评测，返回 {task_name: cosine_spearman}。"""
     import mteb
-    import torch
-    from sentence_transformers import SentenceTransformer
 
     logger.info(f"  Loading: {model_path}")
-    model = SentenceTransformer(
-        model_path,
-        trust_remote_code=True,
-        model_kwargs={"torch_dtype": "auto"},   # bf16/fp16，节省显存
-    )
+    model = mteb.get_model(model_path)
+
+    task_objects = mteb.get_tasks(tasks=tasks, languages=["eng"])
+    evaluation   = mteb.MTEB(tasks=task_objects)
+
     out_dir = raw_dir / _short_name(model_path)
     out_dir.mkdir(parents=True, exist_ok=True)
-    logger.info(f"  Running {len(tasks)} MTEB STS tasks (one by one) ...")
+
+    logger.info(f"  Running {len(tasks)} MTEB STS tasks ...")
+    results = evaluation.run(
+        model,
+        output_folder=str(out_dir),
+        overwrite_results=True,
+        eval_splits=["test"],
+    )
 
     scores: dict[str, float] = {}
-    for task_name in tasks:
-        task_score = float("nan")
-        for batch_size in [32, 16, 8, 4]:
-            try:
-                task_objs  = mteb.get_tasks(tasks=[task_name], languages=["eng"])
-                evaluation = mteb.MTEB(tasks=task_objs)
-                results    = evaluation.run(
-                    model,
-                    output_folder=str(out_dir),
-                    verbosity=0,
-                    encode_kwargs={"batch_size": batch_size, "normalize_embeddings": True},
-                )
-                task_score = _extract_score(results[0], logger)
-                tag = f"  [batch={batch_size}]" if batch_size < 32 else ""
-                if not np.isnan(task_score):
-                    logger.info(f"    {task_name:<20} {task_score:.4f}{tag}")
-                else:
-                    logger.warning(f"    {task_name:<20} N/A{tag}")
-                break   # 成功，继续下一个任务
-
-            except torch.cuda.OutOfMemoryError:
-                logger.warning(f"    OOM at batch_size={batch_size} for {task_name}, retrying ...")
-                torch.cuda.empty_cache()
-                if batch_size == 4:
-                    logger.error(f"    {task_name}: OOM at minimum batch_size=4, skipping")
-            except Exception as exc:
-                logger.error(f"    {task_name} failed: {exc}", exc_info=True)
-                break
-
-        scores[task_name] = task_score
+    for result in results:
+        score = _extract_score(result, logger)
+        scores[result.task_name] = score
+        if not np.isnan(score):
+            logger.info(f"    {result.task_name:<20} {score:.4f}")
+        else:
+            logger.warning(f"    {result.task_name:<20} N/A")
 
     logger.info(f"  Average: {_avg(scores):.4f}")
     return scores
@@ -163,37 +139,30 @@ def write_summary_txt(
     out_path: Path,
     timestamp: str,
 ) -> None:
-    col_w = 14
+    col_w  = 14
     header = f"  {'Task':<24}" + "".join(f"  {_short_name(m):<{col_w}}" for m in model_paths)
     sep    = "  " + "-" * (len(header) - 2)
-
-    lines = [
+    lines  = [
         "=" * 76,
         "MTEB STS Evaluation",
         f"Date      : {timestamp}",
         "Benchmark : MTEB(eng, v1) — 10 STS tasks",
         "Metric    : cosine_spearman",
-        "=" * 76,
-        "",
-        "Models",
-        "-" * 76,
+        "=" * 76, "", "Models", "-" * 76,
     ]
     for m in model_paths:
         lines.append(f"  {_short_name(m):<20} {m}")
     lines += ["", "Results", "-" * 76, header, sep]
-
     for task in MTEB_STS_TASKS:
         row = f"  {task:<24}"
         for m in model_paths:
             v = all_scores.get(m, {}).get(task, float("nan"))
             row += f"  {v:>{col_w}.4f}" if not np.isnan(v) else f"  {'N/A':>{col_w}}"
         lines.append(row)
-
     lines.append(sep)
     avg_row = f"  {'Average (10 tasks)':<24}"
     for m in model_paths:
-        avg = _avg(all_scores.get(m, {}))
-        avg_row += f"  {avg:>{col_w}.4f}" if not np.isnan(avg) else f"  {'N/A':>{col_w}}"
+        avg_row += f"  {_avg(all_scores.get(m, {})):>{col_w}.4f}"
     lines += [avg_row, "", "=" * 76]
     out_path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -205,7 +174,6 @@ def write_report_md(
     timestamp: str,
 ) -> None:
     def fmt(v): return f"{v:.4f}" if not np.isnan(v) else "N/A"
-
     cols_h   = " | ".join(_short_name(m) for m in model_paths)
     cols_sep = "|".join("------" for _ in model_paths)
     lines = [
@@ -213,16 +181,12 @@ def write_report_md(
         f"**Date**: {timestamp}  ",
         "**Benchmark**: MTEB(eng, v1) — 10 STS tasks  ",
         "**Metric**: `cosine_spearman`",
-        "",
-        "## Models",
-        "",
+        "", "## Models", "",
     ]
     for m in model_paths:
         lines.append(f"- `{m}`")
     lines += [
-        "",
-        "## Results",
-        "",
+        "", "## Results", "",
         "![scores](charts/scores.png)",
         "",
         f"| Task | {cols_h} |",
@@ -247,8 +211,7 @@ def plot_scores(
 ) -> None:
     tasks_display = MTEB_STS_TASKS + ["Average"]
     n_models = len(model_paths)
-    n_tasks  = len(tasks_display)
-    x = np.arange(n_tasks)
+    x = np.arange(len(tasks_display))
     width = min(0.72 / n_models, 0.22)
 
     plt.rcParams.update({
@@ -258,24 +221,20 @@ def plot_scores(
         "font.family": "DejaVu Sans", "font.size": 9,
         "axes.titlesize": 11, "axes.titleweight": "bold",
     })
-    fig, ax = plt.subplots(figsize=(max(14, n_tasks * 1.3), 6))
+    fig, ax = plt.subplots(figsize=(max(14, len(tasks_display) * 1.3), 6))
 
     for i, (m, color) in enumerate(zip(model_paths, COLORS)):
-        task_scores = [all_scores.get(m, {}).get(t, float("nan")) for t in MTEB_STS_TASKS]
-        avg_val     = _avg(dict(zip(MTEB_STS_TASKS, task_scores)))
-        vals        = task_scores + [avg_val]
-        offset      = (i - n_models / 2 + 0.5) * width
-        bars = ax.bar(x + offset, vals, width,
-                      label=_short_name(m), color=color,
-                      alpha=0.85, edgecolor="white", linewidth=0.5)
+        task_vals = [all_scores.get(m, {}).get(t, float("nan")) for t in MTEB_STS_TASKS]
+        vals = task_vals + [_avg(dict(zip(MTEB_STS_TASKS, task_vals)))]
+        bars = ax.bar(x + (i - n_models / 2 + 0.5) * width, vals, width,
+                      label=_short_name(m), color=color, alpha=0.85,
+                      edgecolor="white", linewidth=0.5)
         for bar, val in zip(bars, vals):
             if not np.isnan(val):
-                ax.text(bar.get_x() + bar.get_width() / 2,
-                        bar.get_height() + 0.003,
-                        f"{val:.3f}",
-                        ha="center", va="bottom", fontsize=6.5, rotation=90)
+                ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.003,
+                        f"{val:.3f}", ha="center", va="bottom", fontsize=6.5, rotation=90)
 
-    ax.axvline(x=n_tasks - 1 - 0.5, color="#AAAAAA", linewidth=1.0, linestyle="--")
+    ax.axvline(x=len(tasks_display) - 1 - 0.5, color="#AAAAAA", linewidth=1.0, linestyle="--")
     ax.set_xticks(x)
     ax.set_xticklabels(tasks_display, rotation=20, ha="right")
     ax.set_ylim(0.0, 1.08)
@@ -298,11 +257,11 @@ def main() -> None:
     )
     parser.add_argument(
         "--model", dest="models", action="append", required=True, metavar="MODEL",
-        help="模型路径或 HF model ID（可多次指定，评测并对比多个模型）",
+        help="模型路径或 HF model ID（可多次指定）",
     )
     args = parser.parse_args()
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_dir    = RESULTS_DIR / timestamp
     charts_dir = out_dir / "charts"
     raw_dir    = out_dir / "raw"
@@ -319,11 +278,9 @@ def main() -> None:
     )
     logger = logging.getLogger(__name__)
     logger.info(f"Models : {args.models}")
-    logger.info(f"Tasks  : {MTEB_STS_TASKS}")
     logger.info(f"Output : {out_dir}")
 
     all_scores: dict[str, dict[str, float]] = {}
-
     for model_path in args.models:
         logger.info(f"\n{'─'*50}\nModel: {model_path}")
         try:
@@ -351,7 +308,6 @@ def main() -> None:
     print(avg_row)
     print(f"{'='*70}\n")
 
-    # 保存原始分数
     scores_path = raw_dir / "scores.json"
     scores_path.write_text(
         json.dumps({"timestamp": timestamp, "models": args.models,
